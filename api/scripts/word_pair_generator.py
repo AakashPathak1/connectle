@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict, deque
 from gensim.models import KeyedVectors
 from nltk.corpus import wordnet
+import sys
+sys.path.append('../app/models')
 from supabase_config import supabase, PUZZLES_TABLE
 import certifi
 
@@ -28,7 +30,7 @@ nltk.download('wordnet', quiet=True)
 # Constants
 MIN_WORD_SIMILARITY = 0.6
 MAX_ATTEMPTS = 100
-EMBEDDINGS_FILE = "glove.word2vec.txt"
+EMBEDDINGS_FILE = "../../glove.word2vec.txt"
 
 def load_embeddings():
     """Load word embeddings from file"""
