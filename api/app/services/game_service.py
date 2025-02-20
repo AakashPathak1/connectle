@@ -1,5 +1,6 @@
 from flask import jsonify
 from datetime import datetime
+import random
 from ..models.supabase_config import supabase, PUZZLES_TABLE
 
 class GameService:
@@ -12,7 +13,7 @@ class GameService:
             response = supabase.table(PUZZLES_TABLE).select("*").execute()
             if response.data:
                 # Get a random puzzle from the available ones
-                puzzle = response.data[0]  # For now, just get the first one
+                puzzle = random.choice(response.data)  # For now, just get the first one
                 return jsonify({
                     "start_word": puzzle["start_word"],
                     "end_word": puzzle["end_word"],
