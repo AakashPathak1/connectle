@@ -14,5 +14,11 @@ app = create_app()
 def health_check():
     return {'status': 'healthy'}
 
+# Handle Vercel serverless environment
+if os.environ.get('VERCEL_ENV') == 'production':
+    app.debug = False
+else:
+    app.debug = True
+
 if __name__ == "__main__":
     app.run(port=5001)
