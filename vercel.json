@@ -9,12 +9,33 @@
                 "runtime": "python3.9",
                 "includeFiles": ["api/**"]
             }
+        },
+        {
+            "src": "frontend/package.json",
+            "use": "@vercel/static-build",
+            "config": { "distDir": "frontend/build" }
         }
     ],
     "routes": [
         {
-            "src": "/(.*)",
+            "src": "/api/(.*)",
             "dest": "api/wsgi.py"
+        },
+        {
+            "src": "/static/(.*)",
+            "dest": "/frontend/static/$1"
+        },
+        {
+            "src": "/favicon.ico",
+            "dest": "/frontend/favicon.ico"
+        },
+        {
+            "src": "/manifest.json",
+            "dest": "/frontend/manifest.json"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/frontend/index.html"
         }
     ]
 }

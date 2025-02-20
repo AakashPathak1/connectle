@@ -2,13 +2,21 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
+// Get the base URL based on the environment
+const getBaseUrl = () => {
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:5001';
+  }
+  return '';
+};
+
 function App() {
   const [puzzle, setPuzzle] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("http://localhost:5001/api/daily-puzzle")
+    axios.get(`${getBaseUrl()}/api/daily-puzzle`)
       .then(response => {
         setPuzzle({
           startWord: response.data.start_word,
