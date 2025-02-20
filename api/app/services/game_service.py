@@ -26,5 +26,34 @@ class GameService:
 
     def validate_word(self, data):
         """Validate if the word can be used in the current chain"""
-        # This is a placeholder - implement actual validation logic later
-        return jsonify({"valid": True})
+        import requests
+        import os
+        
+        word1 = data.get('current_word')
+        word2 = data.get('next_word')
+        
+        if not word1 or not word2:
+            return jsonify({"error": "Missing words"}), 400
+            
+        try:
+            # Get the Hugging Face space URL from environment variable
+            hf_space_url = os.getenv('HF_SPACE_URL')
+            response = requests.get(
+                f"{hf_space_url}/check-similarity",
+                params={"word1": word1, "word2": word2}
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                similarity = result["similarity"]
+                # You can adjust this threshold based on your requirements
+                is_valid = similarity > 0.4
+                return jsonify({
+                    "valid": is_valid,
+                    "similarity": similarity
+                })
+            else:
+                return jsonify({"error": response.json().get("detail", "Unknown error")}), response.status_code
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
