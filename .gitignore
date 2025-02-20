@@ -76,3 +76,6 @@ ENV/
 
 # .gitignore
 .gitignore
+
+# Huggingface repo
+connectle-huggingface/
