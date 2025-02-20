@@ -12,8 +12,7 @@
         },
         {
             "src": "frontend/package.json",
-            "use": "@vercel/static-build",
-            "config": { "distDir": "frontend/build" }
+            "use": "@vercel/node"
         }
     ],
     "routes": [
@@ -22,20 +21,11 @@
             "dest": "api/wsgi.py"
         },
         {
-            "src": "/static/(.*)",
-            "dest": "/frontend/static/$1"
-        },
-        {
-            "src": "/favicon.ico",
-            "dest": "/frontend/favicon.ico"
-        },
-        {
-            "src": "/manifest.json",
-            "dest": "/frontend/manifest.json"
+            "handle": "filesystem"
         },
         {
             "src": "/(.*)",
-            "dest": "/frontend/index.html"
+            "dest": "frontend/index.js"
         }
     ]
 }
