@@ -10,13 +10,7 @@ interface Puzzle {
   endDefinition: string;
 }
 
-// Get the base URL based on the environment
-const getBaseUrl = () => {
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:5001';
-  }
-  return '';
-};
+const API_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:5001' : '';
 
 export default function Home() {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
@@ -24,7 +18,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${getBaseUrl()}/api/daily-puzzle`)
+    axios.get(`${API_URL}/api/daily-puzzle`)
       .then(response => {
         setPuzzle({
           startWord: response.data.start_word,

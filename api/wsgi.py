@@ -2,10 +2,10 @@ import sys
 import os
 from flask import Flask
 
-# Add the api directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the current directory to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from api.app import create_app
+from app import create_app
 
 app = create_app()
 

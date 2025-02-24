@@ -1,6 +1,7 @@
 from flask import jsonify
 from datetime import datetime
 import random
+import os
 from ..models.supabase_config import supabase, PUZZLES_TABLE
 
 class GameService:
@@ -10,10 +11,16 @@ class GameService:
     def get_daily_puzzle(self):
         """Get a random puzzle from Supabase"""
         try:
+            # Check if environment variables are set
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_key = os.getenv("SUPABASE_KEY")
+            if not supabase_url or not supabase_key:
+                return jsonify({"error": "Missing Supabase configuration"}), 500
+
             response = supabase.table(PUZZLES_TABLE).select("*").execute()
             if response.data:
                 # Get a random puzzle from the available ones
-                puzzle = random.choice(response.data)  # For now, just get the first one
+                puzzle = random.choice(response.data)
                 return jsonify({
                     "start_word": puzzle["start_word"],
                     "end_word": puzzle["end_word"],
@@ -22,7 +29,10 @@ class GameService:
                 })
             return jsonify({"error": "No puzzles found"}), 404
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            import traceback
+            error_msg = f"Error: {str(e)}\nTraceback: {traceback.format_exc()}"
+            print(error_msg)  # This will show in Vercel logs
+            return jsonify({"error": error_msg}), 500
 
     def validate_word(self, data):
         """Validate if the word can be used in the current chain"""

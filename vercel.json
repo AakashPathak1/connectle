@@ -7,11 +7,12 @@
             "config": {
                 "maxLambdaSize": "15mb",
                 "runtime": "python3.9",
-                "includeFiles": ["api/**/*"]
+                "includeFiles": ["api/**/*"],
+                "installCommand": "pip install -r api/requirements.txt"
             }
         },
         {
-            "src": "frontend",
+            "src": "frontend/package.json",
             "use": "@vercel/next"
         }
     ],
@@ -24,16 +25,8 @@
             "handle": "filesystem"
         },
         {
-            "src": "/static/(.*)",
-            "dest": "/frontend/build/static/$1"
-        },
-        {
-            "src": "/(.+\\.[a-zA-Z]+)$",
-            "dest": "/frontend/build/$1"
-        },
-        {
             "src": "/(.*)",
-            "dest": "/frontend/build/index.html"
+            "dest": "/frontend/$1"
         }
     ]
 }
