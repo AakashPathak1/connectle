@@ -22,9 +22,15 @@ def print_output(process, prefix):
     """Print output from a process with a prefix"""
     while True:
         output = process.stdout.readline()
+        error = process.stderr.readline()
         if output:
             print(f"{prefix}: {output.strip()}")
+        if error:
+            print(f"{prefix} ERROR: {error.strip()}")
         if process.poll() is not None:
+            # Print any remaining errors
+            for error in process.stderr.readlines():
+                print(f"{prefix} ERROR: {error.strip()}")
             break
 
 def cleanup_processes(processes):
@@ -50,11 +56,13 @@ def main():
     # Start backend (Flask)
     print("Starting backend server...")
     backend = run_command(
-        'flask run --port 5001',
+        'python3 wsgi.py',
         api_dir,
         env={
             'FLASK_APP': 'wsgi.py',
-            'PYTHONPATH': api_dir
+            'FLASK_DEBUG': '1',
+            'PYTHONPATH': api_dir,
+            'FLASK_ENV': 'development'
         }
     )
     
@@ -75,12 +83,18 @@ def main():
                 
             # Print output from both processes
             frontend_output = frontend.stdout.readline()
+            frontend_error = frontend.stderr.readline()
             if frontend_output:
                 print(f"Frontend: {frontend_output.strip()}")
+            if frontend_error:
+                print(f"Frontend ERROR: {frontend_error.strip()}")
                 
             backend_output = backend.stdout.readline()
+            backend_error = backend.stderr.readline()
             if backend_output:
                 print(f"Backend: {backend_output.strip()}")
+            if backend_error:
+                print(f"Backend ERROR: {backend_error.strip()}")
             
             time.sleep(0.1)  # Small delay to prevent CPU hogging
             

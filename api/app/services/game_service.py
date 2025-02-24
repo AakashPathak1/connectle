@@ -2,38 +2,54 @@ from flask import jsonify
 from datetime import datetime
 import random
 import os
+import logging
 from ..models.supabase_config import get_puzzles
+
+logger = logging.getLogger(__name__)
 
 class GameService:
     def __init__(self):
-        pass
+        # Default puzzle in case of database issues
+        self.default_puzzle = {
+            "startWord": "cold",
+            "endWord": "warm",
+            "startDefinition": "Having a low temperature",
+            "endDefinition": "Having or giving out a moderate degree of heat"
+        }
 
     def get_daily_puzzle(self):
-        """Get a random puzzle from Supabase"""
+        """Get today's puzzle from Supabase or fallback to default"""
         try:
+            # Try to get puzzles from database
             puzzles = get_puzzles()
             if puzzles:
+                # Use today's date as seed for consistent daily puzzle
+                today = datetime.now().date()
+                random.seed(int(today.strftime('%Y%m%d')))
                 puzzle = random.choice(puzzles)
+                
                 return jsonify({
                     "startWord": puzzle["start_word"],
                     "endWord": puzzle["end_word"],
                     "startDefinition": puzzle["start_definition"],
-                    "endDefinition": puzzle["end_definition"]
+                    "endDefinition": puzzle["end_definition"],
+                    "source": "database"
                 })
             
-            # Fallback to mock puzzle if no puzzles found
-            mock_puzzle = {
-                "startWord": "cold",
-                "endWord": "street",
-                "startDefinition": "Having a low temperature",
-                "endDefinition": "a public road in a city or town, typically with houses and buildings on one or both sides."
-            }
-            return jsonify(mock_puzzle)
+            # Log warning and use default puzzle if database is empty
+            logger.warning("No puzzles found in database, using default puzzle")
+            return jsonify({**self.default_puzzle, "source": "default"})
+            
         except Exception as e:
-            import traceback
-            error_msg = f"Error: {str(e)}\nTraceback: {traceback.format_exc()}"
-            print(error_msg)  # This will show in Vercel logs
-            return jsonify({"error": error_msg}), 500
+            # Log the full error for debugging
+            logger.error(f"Error fetching puzzle: {str(e)}")
+            
+            # Return default puzzle with error indication
+            return jsonify({
+                **self.default_puzzle,
+                "source": "default",
+                "note": "Using default puzzle due to technical difficulties"
+            })
 
     def validate_word(self, data):
         """Validate if the word can be used in the current chain"""

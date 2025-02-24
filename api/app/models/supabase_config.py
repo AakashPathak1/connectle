@@ -1,38 +1,65 @@
 import os
 import requests
 from dotenv import load_dotenv
-from supabase import create_client
+from supabase import create_client, Client
+import logging
+from ..config import Config
 
-# Load environment variables
-load_dotenv()
-
-# Supabase configuration
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("Missing Supabase environment variables")
-
-# Initialize Supabase client
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Table names
 PUZZLES_TABLE = "puzzles"
 USER_PUZZLE_STATS_TABLE = "user_puzzle_stats"
 PUZZLE_STATS_TABLE = "puzzle_stats"
 
-def get_puzzles():
-    """Get all puzzles from Supabase"""
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}"
-    }
-    url = f"{SUPABASE_URL}/rest/v1/{PUZZLES_TABLE}?select=*"
-    
+# Mock data for development/fallback
+MOCK_PUZZLES = [{
+    "start_word": "cold",
+    "end_word": "warm",
+    "start_definition": "Having a low temperature",
+    "end_definition": "Having or giving out a moderate degree of heat"
+}]
+
+# Supabase client instance
+supabase: Client = None
+
+def init_supabase():
+    """Initialize Supabase client with error handling"""
+    global supabase
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        return response.json()
+        if Config.has_valid_supabase_config():
+            supabase = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
+            return True
+        else:
+            logger.warning("Invalid Supabase configuration. Using mock data.")
+            return False
     except Exception as e:
-        print(f"Error fetching puzzles: {str(e)}")
-        return None
+        logger.error(f"Failed to initialize Supabase client: {str(e)}")
+        return False
+
+def get_puzzles():
+    """Get all puzzles from Supabase with fallback to mock data"""
+    try:
+        # In development without valid Supabase config, return mock data
+        if Config.is_development() and not Config.has_valid_supabase_config():
+            logger.info("Development mode: Using mock puzzle data")
+            return MOCK_PUZZLES
+
+        # Try to initialize Supabase if not already initialized
+        if not supabase and not init_supabase():
+            logger.warning("Using mock puzzle data due to Supabase initialization failure")
+            return MOCK_PUZZLES
+
+        # Fetch puzzles from Supabase
+        response = supabase.table(PUZZLES_TABLE).select("*").execute()
+        if response.data:
+            return response.data
+        
+        logger.warning("No puzzles found in database, using mock data")
+        return MOCK_PUZZLES
+        
+    except Exception as e:
+        logger.error(f"Error fetching puzzles: {str(e)}")
+        return MOCK_PUZZLES
