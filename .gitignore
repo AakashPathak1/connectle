@@ -79,3 +79,6 @@ ENV/
 
 # Huggingface repo
 connectle-huggingface/
+
+# Next.js
+.next/
