@@ -2,7 +2,7 @@ from flask import jsonify
 from datetime import datetime
 import random
 import os
-from ..models.supabase_config import supabase, PUZZLES_TABLE
+from ..models.supabase_config import get_puzzles
 
 class GameService:
     def __init__(self):
@@ -11,23 +11,24 @@ class GameService:
     def get_daily_puzzle(self):
         """Get a random puzzle from Supabase"""
         try:
-            # Check if environment variables are set
-            supabase_url = os.getenv("SUPABASE_URL")
-            supabase_key = os.getenv("SUPABASE_KEY")
-            if not supabase_url or not supabase_key:
-                return jsonify({"error": "Missing Supabase configuration"}), 500
-
-            response = supabase.table(PUZZLES_TABLE).select("*").execute()
-            if response.data:
-                # Get a random puzzle from the available ones
-                puzzle = random.choice(response.data)
+            puzzles = get_puzzles()
+            if puzzles:
+                puzzle = random.choice(puzzles)
                 return jsonify({
                     "start_word": puzzle["start_word"],
                     "end_word": puzzle["end_word"],
                     "start_definition": puzzle["start_definition"],
                     "end_definition": puzzle["end_definition"]
                 })
-            return jsonify({"error": "No puzzles found"}), 404
+            
+            # Fallback to mock puzzle if no puzzles found
+            mock_puzzle = {
+                "start_word": "cold",
+                "end_word": "warm",
+                "start_definition": "Having a low temperature",
+                "end_definition": "Having a fairly high temperature"
+            }
+            return jsonify(mock_puzzle)
         except Exception as e:
             import traceback
             error_msg = f"Error: {str(e)}\nTraceback: {traceback.format_exc()}"
