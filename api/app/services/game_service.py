@@ -15,18 +15,18 @@ class GameService:
             if puzzles:
                 puzzle = random.choice(puzzles)
                 return jsonify({
-                    "start_word": puzzle["start_word"],
-                    "end_word": puzzle["end_word"],
-                    "start_definition": puzzle["start_definition"],
-                    "end_definition": puzzle["end_definition"]
+                    "startWord": puzzle["start_word"],
+                    "endWord": puzzle["end_word"],
+                    "startDefinition": puzzle["start_definition"],
+                    "endDefinition": puzzle["end_definition"]
                 })
             
             # Fallback to mock puzzle if no puzzles found
             mock_puzzle = {
-                "start_word": "cold",
-                "end_word": "warm",
-                "start_definition": "Having a low temperature",
-                "end_definition": "Having a fairly high temperature"
+                "startWord": "cold",
+                "endWord": "street",
+                "startDefinition": "Having a low temperature",
+                "endDefinition": "a public road in a city or town, typically with houses and buildings on one or both sides."
             }
             return jsonify(mock_puzzle)
         except Exception as e:
