@@ -45,6 +45,7 @@ export default function Home() {
   const [hintData, setHintData] = useState<HintResponse | null>(null);
   const [isLoadingHint, setIsLoadingHint] = useState(false);
   const [hintsUsed, setHintsUsed] = useState<number>(0);
+  const [isProcessing, setIsProcessing] = useState(false); // New state for tracking any API request
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle input focus
@@ -84,6 +85,7 @@ export default function Home() {
 
   const checkWordSimilarity = async (word1: string, word2: string) => {
     try {
+      setIsProcessing(true); // Set processing state to true
       const response = await axios.get(`${API_BASE_URL}/api/check-similarity`, {
         params: { word1, word2 }
       });
@@ -91,6 +93,8 @@ export default function Home() {
     } catch (error) {
       console.error('Error checking word similarity:', error);
       throw error;
+    } finally {
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -99,6 +103,7 @@ export default function Home() {
     
     setIsLoadingHint(true);
     setHintData(null);
+    setIsProcessing(true); // Set processing state to true
     
     try {
       const currentWordInChain = wordChain[wordChain.length - 1].toLowerCase();
@@ -118,6 +123,7 @@ export default function Home() {
       setError('Failed to get hint. Please try again.');
     } finally {
       setIsLoadingHint(false);
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -139,13 +145,14 @@ export default function Home() {
 
   const handleWordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentWord.trim()) return;
+    if (!currentWord.trim() || isCheckingWord || isProcessing) return; // Prevent submission if already processing
 
     setIsCheckingWord(true);
     setWordError(null);
     setInvalidWord(false);
     setHintData(null); // Clear hint data when submitting a new word
-
+    setIsProcessing(true); // Set processing state to true
+    
     const normalizedWord = currentWord.toLowerCase().trim();
     
     // Check if word is already in chain
@@ -154,6 +161,7 @@ export default function Home() {
       setWordError('Word already used in chain');
       setIsCheckingWord(false);
       setShouldFocus(true);
+      setIsProcessing(false); // Reset processing state
       return;
     }
 
@@ -192,6 +200,7 @@ export default function Home() {
           }
           setIsCheckingWord(false);
           setShouldFocus(true);
+          setIsProcessing(false); // Reset processing state
           return;
         }
         
@@ -247,6 +256,8 @@ export default function Home() {
       setWordError('Error checking word. Please try again.');
       setIsCheckingWord(false);
       setShouldFocus(true);
+    } finally {
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -311,7 +322,7 @@ export default function Home() {
                     onBlur={() => setShouldFocus(true)}
                     placeholder="Enter your next word"
                     className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isCheckingWord}
+                    disabled={isCheckingWord || isProcessing} // Disable input when processing
                   />
                 </div>
 
@@ -355,7 +366,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={handleBacktrack}
-                    disabled={wordChain.length <= 1}
+                    disabled={wordChain.length <= 1 || isProcessing} // Disable when processing
                     className="w-1/5 bg-gray-500 text-white py-3 px-2 rounded-lg font-medium hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                   >
                     ← Back
@@ -364,20 +375,33 @@ export default function Home() {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={isCheckingWord || !currentWord.trim()}
+                    disabled={isCheckingWord || !currentWord.trim() || isProcessing} // Disable when processing
                     className="w-3/5 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {isCheckingWord ? 'Checking...' : 'Submit Word'}
+                    {isCheckingWord || isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent mr-2"></div>
+                        <span>Processing...</span>
+                      </div>
+                    ) : (
+                      'Submit Word'
+                    )}
                   </button>
                   
                   {/* Hint Button */}
                   <button
                     type="button"
                     onClick={getHint}
-                    disabled={isLoadingHint || wordChain.length === 0}
+                    disabled={isLoadingHint || wordChain.length === 0 || isProcessing} // Disable when processing
                     className="w-1/5 bg-purple-600 text-white py-3 px-2 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                   >
-                    {isLoadingHint ? '...' : 'Hint'}
+                    {isLoadingHint ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                      </div>
+                    ) : (
+                      'Hint'
+                    )}
                   </button>
                 </div>
                 
