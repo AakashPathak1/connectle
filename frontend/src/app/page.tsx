@@ -25,7 +25,12 @@ interface HintResponse {
   all_top_candidates?: HintCandidate[];
 }
 
-const API_URL = 'http://localhost:5001';  // Always use localhost in development
+// API URL configuration
+const isProduction = process.env.NODE_ENV === 'production';
+const API_BASE_URL = isProduction 
+  ? process.env.NEXT_PUBLIC_API_URL || '' // Empty string for relative URLs in production
+  : 'http://localhost:5001'; // Use localhost in development
+
 const HF_SPACE_URL = process.env.NEXT_PUBLIC_HF_SPACE_URL || 'https://aakashpathak-connectle-huggingface.hf.space';
 
 export default function Home() {
@@ -58,7 +63,7 @@ export default function Home() {
   }, [shouldFocus]);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/daily-puzzle`)
+    axios.get(`${API_BASE_URL}/api/daily-puzzle`)
       .then(response => {
         setPuzzle({
           startWord: response.data.startWord,
@@ -170,6 +175,18 @@ export default function Home() {
     }
 
     try {
+      // First, check if the word is valid
+      const validationResponse = await axios.post(`${API_BASE_URL}/api/validate-word`, {
+        word: normalizedWord
+      });
+
+      if (!validationResponse.data.valid) {
+        setInvalidWord(true);
+        setIsCheckingWord(false);
+        setShouldFocus(true);
+        return;
+      }
+
       const lastWord = wordChain[wordChain.length - 1].toLowerCase();
       const similarity = await checkWordSimilarity(lastWord, normalizedWord);
 
