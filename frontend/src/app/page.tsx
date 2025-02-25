@@ -10,6 +10,21 @@ interface Puzzle {
   endDefinition: string;
 }
 
+interface HintCandidate {
+  word: string;
+  similarity_to_current: number;
+  similarity_to_target: number;
+}
+
+interface HintResponse {
+  hint: string | null;
+  message: string;
+  similarity_to_current: number;
+  similarity_to_target: number;
+  similarity_between_current_and_target: number;
+  all_top_candidates?: HintCandidate[];
+}
+
 const API_URL = 'http://localhost:5001';  // Always use localhost in development
 const HF_SPACE_URL = process.env.NEXT_PUBLIC_HF_SPACE_URL || 'https://aakashpathak-connectle-huggingface.hf.space';
 
@@ -24,6 +39,9 @@ export default function Home() {
   const [lastSimilarity, setLastSimilarity] = useState<number | null>(null);
   const [invalidWord, setInvalidWord] = useState<boolean>(false);
   const [shouldFocus, setShouldFocus] = useState(true);
+  const [hintData, setHintData] = useState<HintResponse | null>(null);
+  const [isLoadingHint, setIsLoadingHint] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle input focus
@@ -79,6 +97,49 @@ export default function Home() {
     }
   };
 
+  const getHint = async () => {
+    if (!puzzle) return;
+    
+    setIsLoadingHint(true);
+    setHintData(null);
+    
+    try {
+      const currentWordInChain = wordChain[wordChain.length - 1].toLowerCase();
+      const targetWord = puzzle.endWord.toLowerCase();
+      
+      const response = await axios.get(`${HF_SPACE_URL}/hint`, {
+        params: { 
+          current_word: currentWordInChain,
+          target_word: targetWord
+        }
+      });
+      
+      setHintData(response.data);
+      setHintsUsed(prev => prev + 1); // Increment the hints used counter
+    } catch (error) {
+      console.error('Error getting hint:', error);
+      setError('Failed to get hint. Please try again.');
+    } finally {
+      setIsLoadingHint(false);
+    }
+  };
+
+  const handleBacktrack = () => {
+    if (wordChain.length <= 1) return; // Don't remove the start word
+    
+    // Remove the last word from the chain
+    setWordChain(prev => prev.slice(0, -1));
+    
+    // Clear any errors or hint data
+    setWordError(null);
+    setHintData(null);
+    setLastSimilarity(null);
+    setInvalidWord(false);
+    
+    // Focus the input
+    setShouldFocus(true);
+  };
+
   const handleWordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentWord.trim()) return;
@@ -86,6 +147,7 @@ export default function Home() {
     setIsCheckingWord(true);
     setWordError(null);
     setInvalidWord(false);
+    setHintData(null); // Clear hint data when submitting a new word
 
     const normalizedWord = currentWord.toLowerCase().trim();
     
@@ -174,6 +236,15 @@ export default function Home() {
                 ))}
               </div>
 
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Words in chain: {wordChain.length}
+                </div>
+                <div className="text-sm text-purple-600 dark:text-purple-400">
+                  Hints used: {hintsUsed}
+                </div>
+              </div>
+
               <form onSubmit={handleWordSubmit} className="space-y-4">
                 <div>
                   <input
@@ -197,7 +268,7 @@ export default function Home() {
                       <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700">
                         {invalidWord ? (
                           <span className="text-red-600 dark:text-red-400 font-semibold">
-                            Not a valid English word
+                            Not a valid word
                           </span>
                         ) : (
                           <>
@@ -226,13 +297,88 @@ export default function Home() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isCheckingWord || !currentWord.trim()}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isCheckingWord ? 'Checking...' : 'Submit Word'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Go Back Button */}
+                  <button
+                    type="button"
+                    onClick={handleBacktrack}
+                    disabled={wordChain.length <= 1}
+                    className="w-1/5 bg-gray-500 text-white py-3 px-2 rounded-lg font-medium hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                  >
+                    ← Back
+                  </button>
+                  
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={isCheckingWord || !currentWord.trim()}
+                    className="w-3/5 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isCheckingWord ? 'Checking...' : 'Submit Word'}
+                  </button>
+                  
+                  {/* Hint Button */}
+                  <button
+                    type="button"
+                    onClick={getHint}
+                    disabled={isLoadingHint || wordChain.length === 0}
+                    className="w-1/5 bg-purple-600 text-white py-3 px-2 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                  >
+                    {isLoadingHint ? '...' : 'Hint'}
+                  </button>
+                </div>
+                
+                {/* Hint Results */}
+                {hintData && (
+                  <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <h4 className="font-semibold text-lg mb-2 text-gray-900 dark:text-white">Hint Suggestions</h4>
+                    
+                    {hintData.message && hintData.hint === null && (
+                      <p className="text-amber-600 dark:text-amber-400 mb-2">{hintData.message}</p>
+                    )}
+                    
+                    {hintData.all_top_candidates && hintData.all_top_candidates.length > 0 ? (
+                      <div className="space-y-2">
+                        {(() => {
+                          const filteredCandidates = hintData.all_top_candidates.filter(candidate => {
+                            const candidateWord = candidate.word.toLowerCase();
+                            // Filter out words that are:
+                            // 1. The current word in the chain
+                            // 2. The target word
+                            // 3. Already in the word chain
+                            return candidateWord !== wordChain[wordChain.length - 1].toLowerCase() && 
+                                   candidateWord !== puzzle.endWord.toLowerCase() &&
+                                   !wordChain.map(w => w.toLowerCase()).includes(candidateWord);
+                          });
+                          
+                          if (filteredCandidates.length === 0) {
+                            return (
+                              <div className="p-3 bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 rounded-lg">
+                                <p className="font-medium">Best guesses are already in your word chain. It might be best to backtrack.</p>
+                              </div>
+                            );
+                          }
+                          
+                          return filteredCandidates.map((candidate, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded">
+                              <div className="font-medium">{candidate.word}</div>
+                              <div className="text-sm">
+                                <span className="text-blue-600 dark:text-blue-400 mr-2">
+                                  Current: {(candidate.similarity_to_current * 100).toFixed(1)}%
+                                </span>
+                                <span className="text-green-600 dark:text-green-400">
+                                  Target: {(candidate.similarity_to_target * 100).toFixed(1)}%
+                                </span>
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 dark:text-gray-300">No suitable hints available.</p>
+                    )}
+                  </div>
+                )}
               </form>
             </div>
           </div>
