@@ -191,12 +191,21 @@ export default function Home() {
           setInvalidWord(true);
           // If there's an error message, display it
           if (validationResponse.data.message) {
-            setWordError(validationResponse.data.message);
+            // Check if the message indicates it's not a valid English word
+            if (validationResponse.data.message.includes('is not a valid English word')) {
+              setWordError(`Not a valid word`);
+              setLastSimilarity(null); // Don't show similarity for invalid words
+            } else {
+              setWordError(validationResponse.data.message);
+            }
           } else {
-            const similarityText = validationResponse.data.similarity !== undefined 
-              ? ` (${(validationResponse.data.similarity * 100).toFixed(1)}% similar)` 
-              : '';
-            setWordError(`Word '${normalizedWord}' is not valid for this chain${similarityText}`);
+            // This is for words that are valid English words but not similar enough
+            const similarityValue = validationResponse.data.similarity !== undefined 
+              ? validationResponse.data.similarity
+              : 0;
+            setLastSimilarity(similarityValue);
+            setWordError(null); // Don't set a redundant error message
+            setInvalidWord(false); // It's a valid word, just not similar enough
           }
           setIsCheckingWord(false);
           setShouldFocus(true);
@@ -241,7 +250,8 @@ export default function Home() {
             setWordError("Congratulations! You've completed the puzzle! 🎉");
           }
         } else {
-          setWordError(`Word not similar enough (${(similarity * 100).toFixed(1)}% similar). Try another word.`);
+          setWordError(null); // Don't set a redundant error message
+          setInvalidWord(false); // It's a valid word, just not similar enough
           setIsCheckingWord(false);
           setShouldFocus(true);
         }
@@ -334,6 +344,10 @@ export default function Home() {
                           <span className="text-red-600 dark:text-red-400 font-semibold">
                             Not a valid word
                           </span>
+                        ) : lastSimilarity !== null && lastSimilarity <= 0.5 ? (
+                          <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                            Not similar enough ({(lastSimilarity * 100).toFixed(1)}%)
+                          </span>
                         ) : (
                           <>
                             <span className="font-semibold">Similarity: </span>
@@ -353,7 +367,7 @@ export default function Home() {
                         )}
                       </div>
                     )}
-                    {wordError && (
+                    {wordError && !invalidWord && !wordError.includes('not similar enough') && (
                       <div className={`p-3 rounded-lg ${wordError.includes('Congratulations') ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'}`}>
                         {wordError}
                       </div>
