@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify
 from .services.game_service import GameService
+import logging
 
 main = Blueprint('main', __name__)
+logger = logging.getLogger(__name__)
 game_service = GameService()
 
 @main.route('/api/daily-puzzle', methods=['GET'])
@@ -10,8 +12,14 @@ def get_daily_puzzle():
 
 @main.route('/api/validate-word', methods=['POST'])
 def validate_word():
-    data = request.get_json()
-    return game_service.validate_word(data)
+    logger.info(f"Received validate-word request: {request.data}")
+    try:
+        data = request.get_json()
+        logger.info(f"Parsed JSON data: {data}")
+        return game_service.validate_word(data)
+    except Exception as e:
+        logger.error(f"Error in validate_word: {str(e)}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @main.route('/api/hint', methods=['GET'])
 def get_hint():

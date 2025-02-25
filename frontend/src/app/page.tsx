@@ -45,7 +45,6 @@ export default function Home() {
   const [hintData, setHintData] = useState<HintResponse | null>(null);
   const [isLoadingHint, setIsLoadingHint] = useState(false);
   const [hintsUsed, setHintsUsed] = useState<number>(0);
-  const [gameWon, setGameWon] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle input focus
@@ -92,16 +91,6 @@ export default function Home() {
     } catch (error) {
       console.error('Error checking word similarity:', error);
       throw error;
-    }
-  };
-
-  const isEnglishWord = async (word: string) => {
-    try {
-      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-      return response.ok;
-    } catch (error) {
-      console.error('Error checking word:', error);
-      return false;
     }
   };
 
@@ -171,9 +160,18 @@ export default function Home() {
     try {
       // First, check if the word is valid using the API
       try {
-        const validationResponse = await axios.post(`${API_BASE_URL}/api/validate-word`, {
+        // Ensure we're sending the data in the correct format
+        const payload = {
           current_word: wordChain[wordChain.length - 1],
           next_word: normalizedWord
+        };
+        
+        console.log('Sending validation request with payload:', payload);
+        
+        const validationResponse = await axios.post(`${API_BASE_URL}/api/validate-word`, payload, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
 
         // Store the similarity value
@@ -206,7 +204,7 @@ export default function Home() {
         
         // Check if the player has won
         if (puzzle && normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
-          setGameWon(true);
+          setWordError("Congratulations! You've completed the puzzle! 🎉");
         }
         
         return;

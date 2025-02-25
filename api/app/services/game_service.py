@@ -56,10 +56,27 @@ class GameService:
         """Validate if the word can be used in the current chain"""
         import requests
         
+        # Handle case where data might be None or not a dict
+        if not data or not isinstance(data, dict):
+            logger.error(f"Invalid data format received: {data}")
+            return jsonify({"error": "Invalid request format"}), 400
+        
+        # Handle both formats: {"current_word": "...", "next_word": "..."} and {"word": "..."}
         word1 = data.get('current_word')
         word2 = data.get('next_word')
         
+        # If we received data in the format {"word": "..."}, we need to handle it differently
+        # This appears to be happening in the Vercel deployment
+        if not word1 and not word2 and data.get('word'):
+            # In this case, we're likely receiving a single word to validate
+            # We'll need to get the current word from somewhere else or use a default
+            word2 = data.get('word')
+            # For debugging purposes, log what we received
+            logger.info(f"Received single word format: {data}")
+            return jsonify({"error": "Please provide both current_word and next_word"}), 400
+        
         if not word1 or not word2:
+            logger.warning(f"Missing words in request: {data}")
             return jsonify({"error": "Missing words"}), 400
             
         try:
