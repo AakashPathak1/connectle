@@ -28,10 +28,8 @@ interface HintResponse {
 // API URL configuration
 const isProduction = process.env.NODE_ENV === 'production';
 const API_BASE_URL = isProduction 
-  ? process.env.NEXT_PUBLIC_API_URL || '' // Empty string for relative URLs in production
+  ? '' // Empty string for relative URLs in production
   : 'http://localhost:5001'; // Use localhost in development
-
-const HF_SPACE_URL = process.env.NEXT_PUBLIC_HF_SPACE_URL || 'https://aakashpathak-connectle-huggingface.hf.space';
 
 export default function Home() {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
@@ -47,6 +45,7 @@ export default function Home() {
   const [hintData, setHintData] = useState<HintResponse | null>(null);
   const [isLoadingHint, setIsLoadingHint] = useState(false);
   const [hintsUsed, setHintsUsed] = useState<number>(0);
+  const [gameWon, setGameWon] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle input focus
@@ -63,8 +62,9 @@ export default function Home() {
   }, [shouldFocus]);
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/api/daily-puzzle`)
-      .then(response => {
+    const fetchPuzzle = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/daily-puzzle`);
         setPuzzle({
           startWord: response.data.startWord,
           endWord: response.data.endWord,
@@ -72,17 +72,20 @@ export default function Home() {
           endDefinition: response.data.endDefinition
         });
         setWordChain([response.data.startWord]);
-      })
-      .catch(error => {
+      } catch (error) {
+        console.error("Error fetching puzzle:", error);
         setError("Failed to load puzzle. Please try again.");
-        console.error("Error:", error);
-      })
-      .finally(() => setIsLoading(false));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchPuzzle();
   }, []);
 
   const checkWordSimilarity = async (word1: string, word2: string) => {
     try {
-      const response = await axios.get(`${HF_SPACE_URL}/check-similarity`, {
+      const response = await axios.get(`${API_BASE_URL}/api/check-similarity`, {
         params: { word1, word2 }
       });
       return response.data.similarity;
@@ -112,7 +115,7 @@ export default function Home() {
       const currentWordInChain = wordChain[wordChain.length - 1].toLowerCase();
       const targetWord = puzzle.endWord.toLowerCase();
       
-      const response = await axios.get(`${HF_SPACE_URL}/hint`, {
+      const response = await axios.get(`${API_BASE_URL}/api/hint`, {
         params: { 
           current_word: currentWordInChain,
           target_word: targetWord
@@ -165,52 +168,87 @@ export default function Home() {
       return;
     }
 
-    // Check if it's a valid English word
-    const isValid = await isEnglishWord(normalizedWord);
-    if (!isValid) {
-      setInvalidWord(true);
-      setIsCheckingWord(false);
-      setShouldFocus(true);
-      return;
-    }
-
     try {
-      // First, check if the word is valid
-      const validationResponse = await axios.post(`${API_BASE_URL}/api/validate-word`, {
-        word: normalizedWord
-      });
+      // First, check if the word is valid using the API
+      try {
+        const validationResponse = await axios.post(`${API_BASE_URL}/api/validate-word`, {
+          current_word: wordChain[wordChain.length - 1],
+          next_word: normalizedWord
+        });
 
-      if (!validationResponse.data.valid) {
-        setInvalidWord(true);
+        // Store the similarity value
+        if (validationResponse.data.similarity !== undefined) {
+          setLastSimilarity(validationResponse.data.similarity);
+        }
+
+        if (!validationResponse.data.valid) {
+          setInvalidWord(true);
+          // If there's an error message, display it
+          if (validationResponse.data.message) {
+            setWordError(validationResponse.data.message);
+          } else {
+            const similarityText = validationResponse.data.similarity !== undefined 
+              ? ` (${(validationResponse.data.similarity * 100).toFixed(1)}% similar)` 
+              : '';
+            setWordError(`Word '${normalizedWord}' is not valid for this chain${similarityText}`);
+          }
+          setIsCheckingWord(false);
+          setShouldFocus(true);
+          return;
+        }
+        
+        // If we got here, the word is valid, proceed with the game
+        const newWordChain = [...wordChain, normalizedWord];
+        setWordChain(newWordChain);
+        setCurrentWord('');
         setIsCheckingWord(false);
         setShouldFocus(true);
+        
+        // Check if the player has won
+        if (puzzle && normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
+          setGameWon(true);
+        }
+        
         return;
+      } catch (error) {
+        console.error("Error validating word:", error);
+        // If validation fails, fall back to checking similarity directly
+        // This allows the game to work even if the validation API is down
       }
 
-      const lastWord = wordChain[wordChain.length - 1].toLowerCase();
-      const similarity = await checkWordSimilarity(lastWord, normalizedWord);
+      // This is the fallback path if the API call failed
+      try {
+        const lastWord = wordChain[wordChain.length - 1].toLowerCase();
+        const similarity = await checkWordSimilarity(lastWord, normalizedWord);
 
-      setLastSimilarity(similarity);
-      if (similarity > 0.5) {
-        setInvalidWord(false);
-        setWordChain([...wordChain, normalizedWord]);
-        setCurrentWord('');
-        setShouldFocus(true);
-        
-        // Check if we've reached the end word
-        if (normalizedWord === puzzle?.endWord.toLowerCase()) {
-          setWordError("Congratulations! You've completed the puzzle! 🎉");
+        setLastSimilarity(similarity);
+        if (similarity > 0.5) {
+          setInvalidWord(false);
+          setWordChain([...wordChain, normalizedWord]);
+          setCurrentWord('');
+          setIsCheckingWord(false);
+          setShouldFocus(true);
+          
+          // Check if we've reached the end word
+          if (normalizedWord === puzzle?.endWord.toLowerCase()) {
+            setWordError("Congratulations! You've completed the puzzle! 🎉");
+          }
+        } else {
+          setWordError(`Word not similar enough (${(similarity * 100).toFixed(1)}% similar). Try another word.`);
+          setIsCheckingWord(false);
+          setShouldFocus(true);
         }
-      } else {
-        setWordError(`Word not similar enough (${(similarity * 100).toFixed(1)}% similar). Try another word.`);
+      } catch (err) {
+        console.error('Error checking word similarity:', err);
+        setWordError('Error checking word similarity. Please try again.');
+        setIsCheckingWord(false);
         setShouldFocus(true);
       }
     } catch (err) {
-      console.error('Error checking word similarity:', err);
-      setWordError('Error checking word similarity. Please try again.');
-      setShouldFocus(true);
-    } finally {
+      console.error('Error checking word:', err);
+      setWordError('Error checking word. Please try again.');
       setIsCheckingWord(false);
+      setShouldFocus(true);
     }
   };
 

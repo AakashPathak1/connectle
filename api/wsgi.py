@@ -21,4 +21,6 @@ else:
     app.debug = True
 
 if __name__ == "__main__":
-    app.run(port=5001)
+    # Use port 5001 to avoid conflicts with the Next.js dev server on 3000
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port)

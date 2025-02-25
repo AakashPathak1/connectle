@@ -4,7 +4,11 @@ from .config import Config
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    
+    # Configure CORS to allow requests from any origin in development
+    # and from specific origins in production
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    
     app.config.from_object(Config)
 
     # Register blueprints

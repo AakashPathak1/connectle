@@ -23,6 +23,7 @@ class Config:
     SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'your-anon-key')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+    HF_SPACE_URL = os.getenv('HF_SPACE_URL', 'https://aakashpathak-connectle-huggingface.hf.space')
     
     @classmethod
     def is_development(cls):

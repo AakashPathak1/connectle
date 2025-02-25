@@ -28,5 +28,8 @@
             "src": "/(.*)",
             "dest": "/frontend/$1"
         }
-    ]
+    ],
+    "env": {
+        "VERCEL_ENV": "production"
+    }
 }
