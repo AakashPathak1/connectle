@@ -45,6 +45,7 @@ export default function Home() {
   const [hintData, setHintData] = useState<HintResponse | null>(null);
   const [isLoadingHint, setIsLoadingHint] = useState(false);
   const [hintsUsed, setHintsUsed] = useState<number>(0);
+  const [isProcessing, setIsProcessing] = useState(false); // New state for tracking any API request
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle input focus
@@ -84,6 +85,7 @@ export default function Home() {
 
   const checkWordSimilarity = async (word1: string, word2: string) => {
     try {
+      setIsProcessing(true); // Set processing state to true
       const response = await axios.get(`${API_BASE_URL}/api/check-similarity`, {
         params: { word1, word2 }
       });
@@ -91,6 +93,8 @@ export default function Home() {
     } catch (error) {
       console.error('Error checking word similarity:', error);
       throw error;
+    } finally {
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -99,6 +103,7 @@ export default function Home() {
     
     setIsLoadingHint(true);
     setHintData(null);
+    setIsProcessing(true); // Set processing state to true
     
     try {
       const currentWordInChain = wordChain[wordChain.length - 1].toLowerCase();
@@ -118,6 +123,7 @@ export default function Home() {
       setError('Failed to get hint. Please try again.');
     } finally {
       setIsLoadingHint(false);
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -139,13 +145,14 @@ export default function Home() {
 
   const handleWordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentWord.trim()) return;
+    if (!currentWord.trim() || isCheckingWord || isProcessing) return; // Prevent submission if already processing
 
     setIsCheckingWord(true);
     setWordError(null);
     setInvalidWord(false);
     setHintData(null); // Clear hint data when submitting a new word
-
+    setIsProcessing(true); // Set processing state to true
+    
     const normalizedWord = currentWord.toLowerCase().trim();
     
     // Check if word is already in chain
@@ -154,6 +161,7 @@ export default function Home() {
       setWordError('Word already used in chain');
       setIsCheckingWord(false);
       setShouldFocus(true);
+      setIsProcessing(false); // Reset processing state
       return;
     }
 
@@ -183,15 +191,25 @@ export default function Home() {
           setInvalidWord(true);
           // If there's an error message, display it
           if (validationResponse.data.message) {
-            setWordError(validationResponse.data.message);
+            // Check if the message indicates it's not a valid English word
+            if (validationResponse.data.message.includes('is not a valid English word')) {
+              setWordError(`Not a valid word`);
+              setLastSimilarity(null); // Don't show similarity for invalid words
+            } else {
+              setWordError(validationResponse.data.message);
+            }
           } else {
-            const similarityText = validationResponse.data.similarity !== undefined 
-              ? ` (${(validationResponse.data.similarity * 100).toFixed(1)}% similar)` 
-              : '';
-            setWordError(`Word '${normalizedWord}' is not valid for this chain${similarityText}`);
+            // This is for words that are valid English words but not similar enough
+            const similarityValue = validationResponse.data.similarity !== undefined 
+              ? validationResponse.data.similarity
+              : 0;
+            setLastSimilarity(similarityValue);
+            setWordError(null); // Don't set a redundant error message
+            setInvalidWord(false); // It's a valid word, just not similar enough
           }
           setIsCheckingWord(false);
           setShouldFocus(true);
+          setIsProcessing(false); // Reset processing state
           return;
         }
         
@@ -232,7 +250,8 @@ export default function Home() {
             setWordError("Congratulations! You've completed the puzzle! 🎉");
           }
         } else {
-          setWordError(`Word not similar enough (${(similarity * 100).toFixed(1)}% similar). Try another word.`);
+          setWordError(null); // Don't set a redundant error message
+          setInvalidWord(false); // It's a valid word, just not similar enough
           setIsCheckingWord(false);
           setShouldFocus(true);
         }
@@ -247,6 +266,8 @@ export default function Home() {
       setWordError('Error checking word. Please try again.');
       setIsCheckingWord(false);
       setShouldFocus(true);
+    } finally {
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -311,7 +332,7 @@ export default function Home() {
                     onBlur={() => setShouldFocus(true)}
                     placeholder="Enter your next word"
                     className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isCheckingWord}
+                    disabled={isCheckingWord || isProcessing} // Disable input when processing
                   />
                 </div>
 
@@ -322,6 +343,10 @@ export default function Home() {
                         {invalidWord ? (
                           <span className="text-red-600 dark:text-red-400 font-semibold">
                             Not a valid word
+                          </span>
+                        ) : lastSimilarity !== null && lastSimilarity <= 0.5 ? (
+                          <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                            Not similar enough ({(lastSimilarity * 100).toFixed(1)}%)
                           </span>
                         ) : (
                           <>
@@ -342,7 +367,7 @@ export default function Home() {
                         )}
                       </div>
                     )}
-                    {wordError && (
+                    {wordError && !invalidWord && !wordError.includes('not similar enough') && (
                       <div className={`p-3 rounded-lg ${wordError.includes('Congratulations') ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'}`}>
                         {wordError}
                       </div>
@@ -355,7 +380,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={handleBacktrack}
-                    disabled={wordChain.length <= 1}
+                    disabled={wordChain.length <= 1 || isProcessing} // Disable when processing
                     className="w-1/5 bg-gray-500 text-white py-3 px-2 rounded-lg font-medium hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                   >
                     ← Back
@@ -364,20 +389,33 @@ export default function Home() {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={isCheckingWord || !currentWord.trim()}
+                    disabled={isCheckingWord || !currentWord.trim() || isProcessing} // Disable when processing
                     className="w-3/5 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {isCheckingWord ? 'Checking...' : 'Submit Word'}
+                    {isCheckingWord || isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent mr-2"></div>
+                        <span>Processing...</span>
+                      </div>
+                    ) : (
+                      'Submit Word'
+                    )}
                   </button>
                   
                   {/* Hint Button */}
                   <button
                     type="button"
                     onClick={getHint}
-                    disabled={isLoadingHint || wordChain.length === 0}
+                    disabled={isLoadingHint || wordChain.length === 0 || isProcessing} // Disable when processing
                     className="w-1/5 bg-purple-600 text-white py-3 px-2 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                   >
-                    {isLoadingHint ? '...' : 'Hint'}
+                    {isLoadingHint ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                      </div>
+                    ) : (
+                      'Hint'
+                    )}
                   </button>
                 </div>
                 
