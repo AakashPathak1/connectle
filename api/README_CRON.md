@@ -4,11 +4,11 @@ This document explains the cron job setup for the Connectle API.
 
 ## Daily Puzzle Cron Job
 
-The API includes a cron job that automatically sets a random puzzle as the daily puzzle every 2 hours. This ensures that users get a fresh puzzle regularly without manual intervention.
+The API includes a cron job that automatically sets a random puzzle as the daily puzzle every hour. This ensures that users get a fresh puzzle regularly without manual intervention.
 
 ### How it Works
 
-1. The cron job is defined in the `vercel.json` file with the schedule `0 */2 * * *` (runs every 2 hours at minute 0).
+1. The cron job is defined in the `vercel.json` file with the schedule `0 * * * *` (runs every hour at minute 0).
 2. When triggered, Vercel calls the `/api/cron/set-random-daily` endpoint.
 3. This endpoint executes the `set_random_daily()` function from `app/cron.py`.
 4. The function selects a random puzzle from the database and sets its `is_daily` column to `true`, while setting all other puzzles' `is_daily` to `false`.
