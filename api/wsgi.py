@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app import create_app
-from app.cron import set_random_daily
 
 app = create_app()
 
@@ -26,6 +25,9 @@ def health_check():
 # Add a cron job endpoint to set a random daily puzzle
 @app.route('/api/cron/set-random-daily', methods=['GET', 'POST'])
 def cron_set_random_daily():
+    # Import here to avoid circular imports
+    from app.cron import set_random_daily
+    
     # Check for Vercel cron authentication header
     cron_secret = os.environ.get('CRON_SECRET')
     if cron_secret:

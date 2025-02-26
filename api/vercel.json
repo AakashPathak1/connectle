@@ -21,6 +21,13 @@
   "env": {
     "CRON_SECRET": {
       "type": "secret"
+    },
+    "FLASK_ENV": "production",
+    "SUPABASE_URL": {
+      "type": "secret"
+    },
+    "SUPABASE_KEY": {
+      "type": "secret"
     }
   }
 }
