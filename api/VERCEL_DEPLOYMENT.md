@@ -77,6 +77,20 @@ After deployment, you can monitor your API:
 2. Test the health check endpoint: `/api/health`
 3. Test the daily puzzle endpoint: `/api/daily-puzzle`
 
+## Cron Job
+
+The API includes a cron job that sets a random puzzle as daily every hour. This is configured in the `vercel.json` file and should work automatically after deployment.
+
+To manually trigger the cron job:
+```
+https://your-vercel-domain.vercel.app/api/cron/set-random-daily
+```
+
+Note: The cron endpoint is protected with the `CRON_SECRET` environment variable. To call it manually, you need to include the Authorization header:
+```
+Authorization: Bearer your-cron-secret
+```
+
 ## Updating Your Deployment
 
 When you make changes to your code:
