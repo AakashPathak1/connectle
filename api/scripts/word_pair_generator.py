@@ -1,3 +1,28 @@
+#!/usr/bin/env python3
+"""
+Word Pair Generator for Connectle
+
+This script generates word pairs for the Connectle game and stores them in Supabase.
+Each word pair consists of a start word, an end word, and their definitions.
+
+Usage:
+    python word_pair_generator.py [--count COUNT] [--daily]
+
+Options:
+    --count COUNT    Number of word pairs to generate (default: 1)
+    --daily          Mark the first generated puzzle as the daily puzzle
+
+Examples:
+    # Generate one word pair
+    python word_pair_generator.py
+
+    # Generate 5 word pairs
+    python word_pair_generator.py --count 5
+
+    # Generate 3 word pairs and mark the first one as the daily puzzle
+    python word_pair_generator.py --count 3 --daily
+"""
+
 import logging
 import random
 import ssl
@@ -8,9 +33,10 @@ from collections import defaultdict, deque
 from nltk.corpus import wordnet
 from nltk.corpus import brown
 import sys
-sys.path.append('../app/models')
-from supabase_config import supabase, PUZZLES_TABLE
+import os
 import certifi
+from supabase import create_client, Client
+import argparse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -24,9 +50,29 @@ except AttributeError:
 else:
     ssl._create_default_https_context = _create_unverified_https_context
 
-# Download NLTK data with SSL verification
+# Download required NLTK data
 nltk.data.path.append(certifi.where())
 nltk.download('wordnet', quiet=True)
+
+# Add the parent directory to sys.path to allow absolute imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.models.supabase_config import PUZZLES_TABLE
+from app.config import Config
+
+# Debug logging for Supabase configuration
+logging.info(f"Supabase URL: {Config.SUPABASE_URL}")
+logging.info(f"Has valid Supabase config: {Config.has_valid_supabase_config()}")
+
+# Create a local Supabase client
+supabase_client = None
+if Config.has_valid_supabase_config():
+    try:
+        supabase_client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
+        logging.info("Local Supabase client created successfully")
+    except Exception as e:
+        logging.error(f"Failed to create local Supabase client: {e}")
+else:
+    logging.warning("Invalid Supabase configuration")
 
 # Constants
 MIN_WORD_SIMILARITY = 0.6
@@ -169,9 +215,38 @@ class WordPairGenerator:
             
         return None, None, None, None
 
+def word_pair_exists(start_word, end_word):
+    """Check if a word pair already exists in the database"""
+    try:
+        if not supabase_client:
+            logging.error("No valid Supabase client available")
+            return False
+            
+        # Query for existing pairs with the same start and end words
+        response = supabase_client.table(PUZZLES_TABLE) \
+            .select("*") \
+            .eq("start_word", start_word) \
+            .eq("end_word", end_word) \
+            .execute()
+            
+        # Return True if any matching pairs were found
+        return len(response.data) > 0
+    except Exception as e:
+        logging.error(f"Error checking for existing word pair: {e}")
+        return False
+
 def store_puzzle(start_word, end_word, start_def, end_def, is_daily=False):
     """Store a puzzle in Supabase"""
     try:
+        # Check if we have a valid Supabase client
+        if not supabase_client:
+            logging.error("No valid Supabase client available")
+            return False
+            
+        # Check if this word pair already exists
+        if word_pair_exists(start_word, end_word):
+            logging.warning(f"Word pair already exists: {start_word} -> {end_word}")
+            return False
         
         # Prepare data matching the schema
         data = {
@@ -184,7 +259,7 @@ def store_puzzle(start_word, end_word, start_def, end_def, is_daily=False):
         }
         
         # Store in Supabase
-        response = supabase.table(PUZZLES_TABLE).insert(data).execute()
+        response = supabase_client.table(PUZZLES_TABLE).insert(data).execute()
         
         logging.info(f"Stored puzzle: {start_word} -> {end_word}")
         return True
@@ -193,23 +268,48 @@ def store_puzzle(start_word, end_word, start_def, end_def, is_daily=False):
         return False
 
 if __name__ == "__main__":
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Generate word pairs for Connectle puzzles')
+    parser.add_argument('--count', type=int, default=1, help='Number of word pairs to generate (default: 1)')
+    parser.add_argument('--daily', action='store_true', help='Mark the first generated puzzle as daily')
+    args = parser.parse_args()
+    
     try:
         model = load_embeddings()
         common_words = load_common_words(model)
         generator = WordPairGenerator(model, common_words)
         
-        # Generate and store one daily puzzle
-        start, end, start_def, end_def = generator.generate_word_pair()
-
-        print(start, start_def, end, end_def, sep="\n")
+        # Track successful insertions
+        successful_pairs = 0
         
-        if start and end:
-            if store_puzzle(start, end, start_def, end_def, is_daily=True):
-                logging.info("Successfully generated and stored daily puzzle!")
+        # Generate the specified number of word pairs
+        for i in range(args.count):
+            # Generate a word pair
+            start, end, start_def, end_def = generator.generate_word_pair()
+            
+            if not start or not end:
+                logging.error(f"Failed to generate word pair {i+1}/{args.count}")
+                continue
+                
+            print(f"Pair {i+1}/{args.count}:")
+            print(f"Start: {start}")
+            print(f"Definition: {start_def}")
+            print(f"End: {end}")
+            print(f"Definition: {end_def}")
+            print("---")
+            
+            # Determine if this should be marked as a daily puzzle
+            is_daily = args.daily and i == 0
+            
+            # Store the puzzle
+            if store_puzzle(start, end, start_def, end_def, is_daily=is_daily):
+                logging.info(f"Successfully stored puzzle {i+1}/{args.count}")
+                successful_pairs += 1
             else:
-                logging.error("Failed to store daily puzzle")
-        else:
-            logging.error("Failed to generate suitable word pair")
+                logging.error(f"Failed to store puzzle {i+1}/{args.count}")
+        
+        # Summary
+        logging.info(f"Generated and stored {successful_pairs}/{args.count} puzzles")
             
     except Exception as e:
         logging.error(f"An error occurred: {e}")
