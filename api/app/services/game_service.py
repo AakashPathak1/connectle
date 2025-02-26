@@ -24,10 +24,19 @@ class GameService:
             # Try to get puzzles from database
             puzzles = get_puzzles()
             if puzzles:
-                # Use today's date as seed for consistent daily puzzle
-                today = datetime.now().date()
-                random.seed(int(today.strftime('%Y%m%d')))
-                puzzle = random.choice(puzzles)
+                # First, try to find a puzzle marked as daily
+                daily_puzzles = [p for p in puzzles if p.get('is_daily', False)]
+                
+                if daily_puzzles:
+                    # Use the first puzzle marked as daily
+                    puzzle = daily_puzzles[0]
+                    logger.info("Using puzzle marked as daily")
+                else:
+                    # Fallback to random selection if no puzzle is marked as daily
+                    logger.info("No puzzle marked as daily, using random selection")
+                    today = datetime.now().date()
+                    random.seed(int(today.strftime('%Y%m%d')))
+                    puzzle = random.choice(puzzles)
                 
                 return jsonify({
                     "startWord": puzzle["start_word"],

@@ -6,11 +6,15 @@ This script generates word pairs for the Connectle game and stores them in Supab
 Each word pair consists of a start word, an end word, and their definitions.
 
 Usage:
-    python word_pair_generator.py [--count COUNT] [--daily]
+    python word_pair_generator.py [--count COUNT] [--daily] [--set-daily ID] [--random-daily] [--list] [--list-limit LIMIT]
 
 Options:
     --count COUNT    Number of word pairs to generate (default: 1)
     --daily          Mark the first generated puzzle as the daily puzzle
+    --set-daily ID   Set an existing puzzle as daily by its ID
+    --random-daily   Set a random puzzle as daily
+    --list           List the most recent puzzles
+    --list-limit LIMIT  Number of puzzles to list (default: 10)
 
 Examples:
     # Generate one word pair
@@ -21,6 +25,15 @@ Examples:
 
     # Generate 3 word pairs and mark the first one as the daily puzzle
     python word_pair_generator.py --count 3 --daily
+
+    # Set an existing puzzle as daily
+    python word_pair_generator.py --set-daily <puzzle_id>
+
+    # Set a random puzzle as daily
+    python word_pair_generator.py --random-daily
+
+    # List the most recent puzzles
+    python word_pair_generator.py --list
 """
 
 import logging
@@ -256,6 +269,7 @@ def store_puzzle(start_word, end_word, start_def, end_def, is_daily=False):
             'start_definition': start_def,
             'end_definition': end_def,
             'created_at': datetime.now().isoformat(),  # Current timestamp
+            'is_daily': is_daily,  # Set the is_daily flag
         }
         
         # Store in Supabase
@@ -267,14 +281,186 @@ def store_puzzle(start_word, end_word, start_def, end_def, is_daily=False):
         logging.error(f"Failed to store puzzle: {e}")
         return False
 
+def set_puzzle_as_daily(puzzle_id):
+    """Set a puzzle as the daily puzzle and unset any other daily puzzles"""
+    try:
+        # Check if we have a valid Supabase client
+        if not supabase_client:
+            logging.error("No valid Supabase client available")
+            return False
+            
+        # First, check if the puzzle exists
+        check_response = supabase_client.table(PUZZLES_TABLE).select("*").eq("id", puzzle_id).execute()
+        if not check_response.data:
+            logging.error(f"Puzzle with ID {puzzle_id} not found")
+            return False
+            
+        logging.info(f"Found puzzle: {check_response.data[0]['start_word']} -> {check_response.data[0]['end_word']}")
+            
+        # Reset all existing daily puzzles
+        reset_response = supabase_client.table(PUZZLES_TABLE).update({"is_daily": False}).eq("is_daily", True).execute()
+        logging.info("Reset all daily puzzles")
+        
+        # Set the specified puzzle as daily
+        update_response = supabase_client.table(PUZZLES_TABLE).update({"is_daily": True}).eq("id", puzzle_id).execute()
+        
+        # The update might return an empty data array even if successful
+        # Consider it a success if we got a 200 OK response
+        logging.info(f"Set puzzle {puzzle_id} as daily")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to set puzzle as daily: {e}")
+        return False
+
+def set_random_daily_puzzle():
+    """Set a random puzzle as daily"""
+    try:
+        # Check if we have a valid Supabase client
+        if not supabase_client:
+            logging.error("No valid Supabase client available")
+            return False
+            
+        # Get all puzzles
+        puzzles = list_puzzles(limit=100)  # Get up to 100 puzzles to choose from
+        if not puzzles:
+            logging.error("No puzzles found to set as daily")
+            return False
+            
+        # Choose a random puzzle
+        import random
+        random_puzzle = random.choice(puzzles)
+        puzzle_id = random_puzzle['id']
+        
+        logging.info(f"Selected random puzzle: {random_puzzle['start_word']} -> {random_puzzle['end_word']}")
+        
+        # Try to set it as daily
+        success = set_puzzle_as_daily(puzzle_id)
+        
+        if success:
+            logging.info(f"Successfully set puzzle {puzzle_id} as daily")
+            return True
+        else:
+            logging.error(f"Failed to set puzzle {puzzle_id} as daily")
+            
+            # Provide SQL instructions for manual update
+            print("\nTo manually set this puzzle as daily, run these SQL commands in the Supabase SQL Editor:")
+            print("\n-- Reset all daily puzzles")
+            print("UPDATE puzzles SET is_daily = FALSE WHERE is_daily = TRUE;")
+            print(f"\n-- Set puzzle {puzzle_id} as daily")
+            print(f"UPDATE puzzles SET is_daily = TRUE WHERE id = '{puzzle_id}';")
+            
+            # Provide policy instructions
+            print("\nYou may need to add an UPDATE policy to your puzzles table:")
+            print("1. Go to the Authentication > Policies section")
+            print("2. Find the 'puzzles' table")
+            print("3. Click 'New Policy'")
+            print("4. Create a policy named 'Service can update daily puzzles'")
+            print("5. Set the policy type to 'UPDATE'")
+            print("6. Set the policy definition to 'true' or a more restrictive condition if needed")
+            print("7. Apply it to the 'service_role' or appropriate role")
+            
+            return False
+            
+    except Exception as e:
+        logging.error(f"Failed to set random daily puzzle: {e}")
+        return False
+
+def list_puzzles(limit=10):
+    """List the most recent puzzles from Supabase"""
+    try:
+        # Check if we have a valid Supabase client
+        if not supabase_client:
+            logging.error("No valid Supabase client available")
+            return []
+            
+        # Fetch puzzles from Supabase, ordered by creation date
+        response = supabase_client.table(PUZZLES_TABLE).select("*").order("created_at", desc=True).limit(limit).execute()
+        
+        if response.data:
+            return response.data
+        else:
+            logging.warning("No puzzles found in database")
+            return []
+    except Exception as e:
+        logging.error(f"Failed to list puzzles: {e}")
+        return []
+
+def check_daily_puzzle_api():
+    """Check the daily puzzle API to see which puzzle is currently being returned"""
+    try:
+        import requests
+        
+        # Get the API URL from environment or use localhost
+        api_url = os.getenv("API_URL", "http://localhost:5001")
+        
+        # Call the daily puzzle API
+        response = requests.get(f"{api_url}/api/daily-puzzle")
+        
+        if response.status_code >= 200 and response.status_code < 300:
+            puzzle_data = response.json()
+            print("\nCurrent daily puzzle from API:")
+            print(f"  Start word: {puzzle_data.get('startWord')}")
+            print(f"  End word: {puzzle_data.get('endWord')}")
+            print(f"  Source: {puzzle_data.get('source')}")
+            return puzzle_data
+        else:
+            print(f"Failed to get daily puzzle: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        print(f"Error checking daily puzzle API: {e}")
+        return None
+
 if __name__ == "__main__":
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Generate word pairs for Connectle puzzles')
     parser.add_argument('--count', type=int, default=1, help='Number of word pairs to generate (default: 1)')
     parser.add_argument('--daily', action='store_true', help='Mark the first generated puzzle as daily')
+    parser.add_argument('--set-daily', type=str, help='Set an existing puzzle as daily by its ID')
+    parser.add_argument('--random-daily', action='store_true', help='Set a random puzzle as daily')
+    parser.add_argument('--check-api', action='store_true', help='Check which puzzle is currently being returned by the daily puzzle API')
+    parser.add_argument('--list', action='store_true', help='List the most recent puzzles')
+    parser.add_argument('--list-limit', type=int, default=10, help='Number of puzzles to list (default: 10)')
     args = parser.parse_args()
     
     try:
+        # Initialize Supabase client
+        if not supabase_client:
+            logging.error("Failed to initialize Supabase client")
+            sys.exit(1)
+            
+        # Check daily puzzle API if requested
+        if args.check_api:
+            check_daily_puzzle_api()
+            sys.exit(0)
+            
+        # List puzzles if requested
+        if args.list:
+            puzzles = list_puzzles(args.list_limit)
+            if puzzles:
+                print(f"\nListing {len(puzzles)} most recent puzzles:")
+                for p in puzzles:
+                    daily_mark = "* " if p.get('is_daily', False) else "  "
+                    print(f"{daily_mark}{p['id']} | {p['start_word']} -> {p['end_word']} | {p['created_at']} | is_daily: {p.get('is_daily', False)}")
+                print("\n* = current daily puzzle")
+            sys.exit(0)
+            
+        # Set an existing puzzle as daily
+        if args.set_daily:
+            if set_puzzle_as_daily(args.set_daily):
+                print(f"Successfully set puzzle {args.set_daily} as daily")
+            else:
+                print(f"Failed to set puzzle {args.set_daily} as daily")
+            sys.exit(0)
+            
+        # Set a random puzzle as daily
+        if args.random_daily:
+            if set_random_daily_puzzle():
+                print("Successfully set a random puzzle as daily")
+            else:
+                print("Failed to set a random puzzle as daily")
+            sys.exit(0)
+        
+        # Generate word pairs
         model = load_embeddings()
         common_words = load_common_words(model)
         generator = WordPairGenerator(model, common_words)

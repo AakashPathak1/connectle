@@ -42,6 +42,15 @@ The API can be deployed in two ways:
 1. **As Vercel Serverless Functions**: Configure the API routes in the same Vercel project
 2. **As a Separate Service**: Deploy the API to a service like Heroku, Railway, or a VPS, then set the `NEXT_PUBLIC_API_URL` to the full URL of your API
 
+#### Cron Jobs
+
+The API includes a cron job that automatically sets a random puzzle as the daily puzzle every 2 hours. This ensures that users get a fresh puzzle regularly without manual intervention.
+
+When deploying to Vercel:
+1. The cron job is automatically configured via the `vercel.json` file
+2. Set the `CRON_SECRET` environment variable in your Vercel project settings
+3. For more details, see the [API Cron Job Documentation](api/README_CRON.md)
+
 ### Local Development
 
 For local development:

@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "wsgi.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/set-random-daily",
+      "schedule": "0 */2 * * *"
+    }
+  ],
+  "env": {
+    "CRON_SECRET": {
+      "type": "secret"
+    }
+  }
+}
