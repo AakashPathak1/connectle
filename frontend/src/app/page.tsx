@@ -83,7 +83,6 @@ export default function Home() {
           <ConnectleGame 
             apiBaseUrl={API_BASE_URL}
             puzzle={puzzle}
-            onError={setError}
           />
         ) : null}
       </main>

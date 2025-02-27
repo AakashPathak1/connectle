@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import WordCard from "./word-card"
 import WordChain from "./word-chain"
 import WordInput from "./word-input"
 import HintDisplay from "./hint-display"
 import ConfettiExplosion from "./confetti-explosion"
-import ConnectleLogo from "./connectle-logo"
 
 interface Puzzle {
   startWord: string
@@ -34,10 +33,9 @@ interface HintResponse {
 interface ConnectleGameProps {
   apiBaseUrl: string
   puzzle: Puzzle
-  onError: (error: string) => void
 }
 
-export default function ConnectleGame({ apiBaseUrl, puzzle, onError }: ConnectleGameProps) {
+export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps) {
   const [wordChain, setWordChain] = useState<string[]>([puzzle.startWord])
   const [currentWord, setCurrentWord] = useState("")
   const [isCheckingWord, setIsCheckingWord] = useState(false)
@@ -51,31 +49,18 @@ export default function ConnectleGame({ apiBaseUrl, puzzle, onError }: Connectle
   const [showConfetti, setShowConfetti] = useState(false)
   const [hasWon, setHasWon] = useState(false)
   const [wordAccepted, setWordAccepted] = useState(false)
+  const [gameError, setGameError] = useState<string | null>(null)
 
   // Check if a word is valid English
   const checkIsValidWord = async (word: string) => {
     try {
       const response = await fetch(`${apiBaseUrl}/api/check-word?word=${encodeURIComponent(word)}`)
       const data = await response.json()
-      
       console.log("Word validation response:", data)
-      
-      // If there's an error or the word is not valid, return false
-      if (!response.ok || !data.is_valid) {
-        console.log("Word is invalid:", word)
-        setInvalidWord(true)
-        setLastSimilarity(null)  // Clear similarity when word is invalid
-        return false
-      }
-      
-      // Word is valid
-      console.log("Word is valid:", word)
-      setInvalidWord(false)
-      return true
+      return data.is_valid
     } catch (error) {
       console.error("Error checking word validity:", error)
-      setInvalidWord(true)
-      setLastSimilarity(null)  // Clear similarity when there's an error
+      setGameError("Failed to check word validity. Please try again.")
       return false
     }
   }
@@ -90,6 +75,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle, onError }: Connectle
       return data.similarity
     } catch (error) {
       console.error("Error checking word similarity:", error)
+      setGameError("Failed to check word similarity. Please try again.")
       throw error
     }
   }
@@ -130,7 +116,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle, onError }: Connectle
       setHintsUsed(prev => prev + 1)
     } catch (error) {
       console.error("Error getting hint:", error)
-      setWordError("Failed to get hint. Please try again.")
+      setGameError("Failed to get hint. Please try again.")
     } finally {
       setIsLoadingHint(false)
       setIsProcessing(false)
@@ -280,11 +266,11 @@ export default function ConnectleGame({ apiBaseUrl, puzzle, onError }: Connectle
         }
       } catch (err) {
         console.error('Error checking word similarity:', err)
-        setWordError('Error checking word similarity. Please try again.')
+        setGameError('Error checking word similarity. Please try again.')
       }
     } catch (err) {
       console.error('Error checking word:', err)
-      setWordError('Error checking word. Please try again.')
+      setGameError('Error checking word. Please try again.')
     } finally {
       setIsCheckingWord(false)
       setIsProcessing(false)
@@ -292,72 +278,82 @@ export default function ConnectleGame({ apiBaseUrl, puzzle, onError }: Connectle
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto">
+      {gameError && (
+        <div className="w-full p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-900 dark:text-red-100">
+          <p>{gameError}</p>
+          <button 
+            className="mt-2 text-xs underline"
+            onClick={() => setGameError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {showConfetti && <ConfettiExplosion />}
       
-      <div className="grid md:grid-cols-2 gap-6">
-        <WordCard 
-          word={puzzle.startWord} 
-          definition={puzzle.startDefinition}
-          type="start"
-        />
-        
-        <WordCard 
-          word={puzzle.endWord} 
-          definition={puzzle.endDefinition}
-          type="target"
-        />
-      </div>
+      <motion.div className="w-full max-w-4xl mx-auto space-y-8">
+        <div className="grid md:grid-cols-2 gap-6">
+          <WordCard 
+            word={puzzle.startWord} 
+            definition={puzzle.startDefinition}
+            type="start"
+          />
+          
+          <WordCard 
+            word={puzzle.endWord} 
+            definition={puzzle.endDefinition}
+            type="target"
+          />
+        </div>
 
-      <motion.div 
-        className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Your Word Chain</h3>
-          <div className="flex items-center space-x-4 text-sm">
-            <div className="text-gray-600 dark:text-gray-400">
-              Words: {wordChain.length}
-            </div>
-            <div className="text-purple-600 dark:text-purple-400">
-              Hints: {hintsUsed}
+        <motion.div 
+          className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Your Word Chain</h3>
+            <div className="flex items-center space-x-4 text-sm">
+              <div className="text-gray-600 dark:text-gray-400">
+                Words: {wordChain.length}
+              </div>
+              <div className="text-purple-600 dark:text-purple-400">
+                Hints: {hintsUsed}
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="mb-6">
-          <WordChain words={wordChain} />
-        </div>
+          
+          <div className="mb-6">
+            <WordChain words={wordChain} />
+          </div>
 
-        <WordInput 
-          onSubmit={handleWordSubmit}
-          onBacktrack={handleBacktrack}
-          onRequestHint={getHint}
-          isProcessing={isProcessing}
-          isHintLoading={isLoadingHint}
-          currentWord={currentWord}
-          setCurrentWord={setCurrentWord}
-          wordChainLength={wordChain.length}
-          similarity={lastSimilarity}
-          errorMessage={wordError}
-          isInvalidWord={invalidWord}
-          isSuccess={wordAccepted || hasWon}
-        />
-        
-        <AnimatePresence>
-          {hintData && (
-            <HintDisplay 
-              hint={hintData.hint}
-              message={hintData.message}
-              candidates={hintData.all_top_candidates}
-              currentWord={wordChain[wordChain.length - 1]}
-              targetWord={puzzle.endWord}
-              wordChain={wordChain}
-            />
-          )}
-        </AnimatePresence>
+          <WordInput 
+            onSubmit={handleWordSubmit}
+            onBacktrack={handleBacktrack}
+            onRequestHint={getHint}
+            isProcessing={isProcessing}
+            isHintLoading={isLoadingHint}
+            currentWord={currentWord}
+            setCurrentWord={setCurrentWord}
+            wordChainLength={wordChain.length}
+            similarity={lastSimilarity}
+            errorMessage={wordError}
+            isInvalidWord={invalidWord}
+            isSuccess={wordAccepted || hasWon}
+          />
+          
+          <AnimatePresence>
+            {hintData && (
+              <HintDisplay 
+                hint={hintData.hint}
+                message={hintData.message}
+                candidates={hintData.all_top_candidates}
+              />
+            )}
+          </AnimatePresence>
+        </motion.div>
       </motion.div>
     </div>
   )

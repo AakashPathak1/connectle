@@ -10,34 +10,21 @@ interface HintCandidate {
 
 interface HintDisplayProps {
   hint: string | null
-  message: string | null
+  message: string
   candidates?: HintCandidate[]
-  currentWord: string
-  targetWord: string
-  wordChain: string[]
 }
 
 export default function HintDisplay({
   hint,
   message,
-  candidates = [],
-  currentWord,
-  targetWord,
-  wordChain
+  candidates = []
 }: HintDisplayProps) {
   if (!candidates.length && !message) return null
 
-  // Filter out words that are already in the chain or are the target word
-  const filteredCandidates = candidates.filter(candidate => {
-    const candidateWord = candidate.word.toLowerCase()
-    const lastWordInChain = wordChain.length > 0 ? wordChain[wordChain.length - 1].toLowerCase() : ""
-    
-    return (
-      candidateWord !== lastWordInChain && 
-      candidateWord !== targetWord.toLowerCase() &&
-      !wordChain.map(w => w.toLowerCase()).includes(candidateWord)
-    )
-  })
+  // Simple filtering to remove duplicates
+  const filteredCandidates = candidates.filter((candidate, index, self) => 
+    index === self.findIndex(c => c.word.toLowerCase() === candidate.word.toLowerCase())
+  );
 
   return (
     <motion.div
