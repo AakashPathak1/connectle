@@ -30,6 +30,15 @@
         }
     ],
     "env": {
-        "VERCEL_ENV": "production"
-    }
+        "VERCEL_ENV": "production",
+        "ADMIN_SECRET": {
+            "type": "secret"
+        }
+    },
+    "crons": [
+        {
+            "path": "/api/admin/set-random-daily",
+            "schedule": "0 * * * *"
+        }
+    ]
 }

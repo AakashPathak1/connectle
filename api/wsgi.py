@@ -22,50 +22,31 @@ app = create_app()
 def health_check():
     return {'status': 'healthy'}
 
-# Add a cron job endpoint to set a random daily puzzle
-@app.route('/api/cron/set-random-daily', methods=['GET', 'POST'])
-def cron_set_random_daily():
+# Add a manual trigger endpoint for setting a random daily puzzle
+@app.route('/api/admin/set-random-daily', methods=['POST', 'GET'])
+def admin_set_random_daily():
     # Import here to avoid circular imports
     from app.cron import set_random_daily
     
-    # Log all headers for debugging
-    logger.info(f"Cron job triggered. Headers: {dict(request.headers)}")
+    # Check if this is a Vercel cron job request
+    is_cron_job = request.headers.get('x-vercel-cron') == 'true'
     
-    # Check for Vercel cron authentication header
-    cron_secret = os.environ.get('CRON_SECRET')
-    if cron_secret:
-        # Check multiple possible auth methods
+    # If not a cron job, require authentication
+    if not is_cron_job:
+        # Simple admin authentication
         auth_header = request.headers.get('Authorization')
-        vercel_cron_header = request.headers.get('x-vercel-cron')
+        admin_secret = os.environ.get('ADMIN_SECRET')
         
-        is_authorized = False
-        
-        # Check standard Authorization header
-        if auth_header and (auth_header == f"Bearer {cron_secret}" or auth_header == f"Basic {cron_secret}"):
-            logger.info("Authorized via Authorization header")
-            is_authorized = True
-        
-        # Check Vercel-specific header
-        elif vercel_cron_header and vercel_cron_header == cron_secret:
-            logger.info("Authorized via x-vercel-cron header")
-            is_authorized = True
-        
-        # If running locally or in development, allow without auth
-        elif os.environ.get('VERCEL_ENV') != 'production':
-            logger.info("Running in development mode, bypassing auth")
-            is_authorized = True
-        
-        # If not authorized through any method
-        if not is_authorized:
-            logger.warning("Unauthorized cron job attempt")
+        if not admin_secret or not auth_header or auth_header != f"Bearer {admin_secret}":
+            logger.warning("Unauthorized admin action attempt")
             return {'status': 'error', 'message': 'Unauthorized'}, 401
     else:
-        logger.warning("CRON_SECRET not set, proceeding without authentication")
+        logger.info("Received scheduled cron job request from Vercel")
     
-    # Execute the cron job
-    logger.info("Executing cron job: set_random_daily()")
+    # Execute the function
+    logger.info("Trigger: set_random_daily()")
     result = set_random_daily()
-    logger.info(f"Cron job result: {result}")
+    logger.info(f"Trigger result: {result}")
     return result
 
 # Handle Vercel serverless environment
@@ -75,6 +56,10 @@ if os.environ.get('VERCEL_ENV') == 'production':
 else:
     app.debug = True
     logger.info("Running in development environment")
+    # Only start the background scheduler in development environment
+    from app.cron import start_hourly_scheduler
+    start_hourly_scheduler()
+    logger.info("Started hourly scheduler in development environment")
 
 if __name__ == "__main__":
     # Use port 5001 to avoid conflicts with the Next.js dev server on 3000

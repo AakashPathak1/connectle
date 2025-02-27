@@ -14,8 +14,8 @@ class GameService:
         self.default_puzzle = {
             "startWord": "cold",
             "endWord": "warm",
-            "startDefinition": "Having a low temperature",
-            "endDefinition": "Having or giving out a moderate degree of heat"
+            "startDefinition": "Having a low temperature.\nLacking affection or warmth of feeling.",
+            "endDefinition": "Having or giving out a moderate degree of heat.\nCharacterized by lively or excited activity."
         }
 
     def get_daily_puzzle(self):
@@ -38,11 +38,15 @@ class GameService:
                     random.seed(int(today.strftime('%Y%m%d')))
                     puzzle = random.choice(puzzles)
                 
+                # Ensure definitions have proper line breaks
+                start_definition = puzzle["start_definition"].replace(". ", ".\n")
+                end_definition = puzzle["end_definition"].replace(". ", ".\n")
+                
                 return jsonify({
                     "startWord": puzzle["start_word"],
                     "endWord": puzzle["end_word"],
-                    "startDefinition": puzzle["start_definition"],
-                    "endDefinition": puzzle["end_definition"],
+                    "startDefinition": start_definition,
+                    "endDefinition": end_definition,
                     "source": "database"
                 })
             
@@ -111,7 +115,7 @@ class GameService:
                 message = result.get("message", None)
                 
                 response_data = {
-                    "valid": is_valid,
+                    "is_valid": is_valid,
                     "similarity": result["similarity"]
                 }
                 
