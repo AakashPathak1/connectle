@@ -14,6 +14,7 @@ const nunitoSans = Nunito_Sans({
   display: "swap",
 });
 
+
 export const metadata: Metadata = {
   title: "Connectle",
   description: "A word association game that challenges you to connect words through semantic similarity",
