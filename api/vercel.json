@@ -13,15 +13,9 @@
     }
   ],
   "env": {
-    "ADMIN_SECRET": {
-      "type": "secret"
-    },
+    "ADMIN_SECRET": "@admin-secret",
     "FLASK_ENV": "production",
-    "SUPABASE_URL": {
-      "type": "secret"
-    },
-    "SUPABASE_KEY": {
-      "type": "secret"
-    }
+    "SUPABASE_URL": "@supabase-url",
+    "SUPABASE_KEY": "@supabase-key"
   }
 }
