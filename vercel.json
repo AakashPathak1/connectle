@@ -30,8 +30,7 @@
         }
     ],
     "env": {
-        "VERCEL_ENV": "production",
-        "ADMIN_SECRET": "@admin-secret"
+        "VERCEL_ENV": "production"
     },
     "crons": [
         {

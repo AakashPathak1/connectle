@@ -13,9 +13,6 @@
     }
   ],
   "env": {
-    "ADMIN_SECRET": "@admin-secret",
-    "FLASK_ENV": "production",
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_KEY": "@supabase-key"
+    "FLASK_ENV": "production"
   }
 }
