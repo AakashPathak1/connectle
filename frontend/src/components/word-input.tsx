@@ -100,7 +100,7 @@ export default function WordInput({
                   <span className="text-red-600 dark:text-red-400 font-semibold">
                     Not a valid English word
                   </span>
-                ) : similarity !== null ? (
+                ) : similarity !== null && similarity !== undefined ? (
                   similarity <= 0.5 ? (
                     <span className="text-orange-600 dark:text-orange-400 font-semibold">
                       Not similar enough: {(similarity * 100).toFixed(1)}%
@@ -126,7 +126,7 @@ export default function WordInput({
               </div>
             )}
             
-            {isSuccess && similarity !== null && similarity > 0.5 && (
+            {isSuccess && similarity !== null && similarity !== undefined && similarity > 0.5 && (
               <div className="p-3 rounded-lg bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
                 <span className="font-semibold">
                   Word accepted! Similarity: {(similarity * 100).toFixed(1)}%
