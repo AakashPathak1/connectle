@@ -12,22 +12,7 @@
       "dest": "wsgi.py"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron/set-random-daily",
-      "schedule": "0 * * * *"
-    }
-  ],
   "env": {
-    "CRON_SECRET": {
-      "type": "secret"
-    },
-    "FLASK_ENV": "production",
-    "SUPABASE_URL": {
-      "type": "secret"
-    },
-    "SUPABASE_KEY": {
-      "type": "secret"
-    }
+    "FLASK_ENV": "production"
   }
 }

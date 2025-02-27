@@ -1,5 +1,5 @@
 """
-Cron job functionality for Connectle API.
+Backend functionality for scheduled tasks in Connectle API.
 This module contains functions that are executed on a schedule.
 """
 
@@ -7,7 +7,8 @@ import logging
 import random
 import os
 import sys
-import requests
+import threading
+import time
 from datetime import datetime
 
 # Configure logging
@@ -107,19 +108,42 @@ def set_random_daily_puzzle():
 def set_random_daily():
     """
     Set a random puzzle as daily.
-    This function is called by the cron job.
+    This function is called by the hourly scheduler.
     """
-    logger.info("Cron job: Setting random daily puzzle")
+    logger.info("Hourly task: Setting random daily puzzle")
     try:
         # Set a random puzzle as daily
         success = set_random_daily_puzzle()
         
         if success:
-            logger.info("Successfully set a random puzzle as daily via cron job")
+            logger.info("Successfully set a random puzzle as daily")
             return {"status": "success", "message": "Set a random puzzle as daily"}
         else:
-            logger.error("Failed to set a random puzzle as daily via cron job")
+            logger.error("Failed to set a random puzzle as daily")
             return {"status": "error", "message": "Failed to set a random puzzle as daily"}
     except Exception as e:
-        logger.error(f"Error in cron job: {e}")
+        logger.error(f"Error in hourly task: {e}")
         return {"status": "error", "message": str(e)}
+
+# Hourly scheduler function
+def start_hourly_scheduler():
+    """
+    Start a background thread that runs set_random_daily every hour.
+    """
+    def run_scheduler():
+        logger.info("Starting hourly scheduler for set_random_daily")
+        while True:
+            try:
+                # Run the task
+                set_random_daily()
+                # Sleep for one hour (3600 seconds)
+                time.sleep(3600)
+            except Exception as e:
+                logger.error(f"Error in hourly scheduler: {e}")
+                # If there's an error, still try to continue after a delay
+                time.sleep(60)
+    
+    # Start the scheduler in a background thread
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+    logger.info("Hourly scheduler thread started")
