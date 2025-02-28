@@ -28,38 +28,24 @@ def admin_set_random_daily():
     # Import here to avoid circular imports
     from app.cron import set_random_daily
     
-    # Check if this is a Vercel cron job request
-    is_cron_job = request.headers.get('x-vercel-cron') == 'true'
-    
-    # If not a cron job, require authentication
-    if not is_cron_job:
-        # Simple admin authentication
-        auth_header = request.headers.get('Authorization')
-        admin_secret = os.environ.get('ADMIN_SECRET')
-        
-        if not admin_secret or not auth_header or auth_header != f"Bearer {admin_secret}":
-            logger.warning("Unauthorized admin action attempt")
-            return {'status': 'error', 'message': 'Unauthorized'}, 401
-    else:
-        logger.info("Received scheduled cron job request from Vercel")
-    
-    # Execute the function
-    logger.info("Trigger: set_random_daily()")
+    logger.info("Manual trigger: set_random_daily()")
     result = set_random_daily()
-    logger.info(f"Trigger result: {result}")
+    logger.info(f"Manual trigger result: {result}")
     return result
 
 # Handle Vercel serverless environment
 if os.environ.get('VERCEL_ENV') == 'production':
     app.debug = False
     logger.info("Running in Vercel production environment")
+    # Start the daily scheduler even in production
+    from app.cron import start_daily_scheduler
+    start_daily_scheduler()
 else:
     app.debug = True
     logger.info("Running in development environment")
-    # Only start the background scheduler in development environment
-    from app.cron import start_hourly_scheduler
-    start_hourly_scheduler()
-    logger.info("Started hourly scheduler in development environment")
+    # Start the daily scheduler in development environment
+    from app.cron import start_daily_scheduler
+    start_daily_scheduler()
 
 if __name__ == "__main__":
     # Use port 5001 to avoid conflicts with the Next.js dev server on 3000
