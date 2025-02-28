@@ -31,11 +31,5 @@
     ],
     "env": {
         "VERCEL_ENV": "production"
-    },
-    "crons": [
-        {
-            "path": "/api/admin/set-random-daily",
-            "schedule": "0 0 * * *"
-        }
-    ]
+    }
 }

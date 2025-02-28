@@ -108,9 +108,9 @@ def set_random_daily_puzzle():
 def set_random_daily():
     """
     Set a random puzzle as daily.
-    This function is called by the hourly scheduler.
+    This function is called by the daily scheduler.
     """
-    logger.info("Hourly task: Setting random daily puzzle")
+    logger.info("Daily task: Setting random daily puzzle")
     try:
         # Set a random puzzle as daily
         success = set_random_daily_puzzle()
@@ -122,28 +122,49 @@ def set_random_daily():
             logger.error("Failed to set a random puzzle as daily")
             return {"status": "error", "message": "Failed to set a random puzzle as daily"}
     except Exception as e:
-        logger.error(f"Error in hourly task: {e}")
+        logger.error(f"Error in daily task: {e}")
         return {"status": "error", "message": str(e)}
 
-# Hourly scheduler function
-def start_hourly_scheduler():
+# Daily scheduler function
+def start_daily_scheduler():
     """
-    Start a background thread that runs set_random_daily every hour.
+    Start a background thread that runs set_random_daily at midnight every day.
     """
     def run_scheduler():
-        logger.info("Starting hourly scheduler for set_random_daily")
+        logger.info("Starting daily scheduler thread")
+        
         while True:
             try:
-                # Run the task
+                # Get current time
+                now = datetime.now()
+                
+                # Calculate time until next midnight
+                tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                if tomorrow <= now:
+                    # If it's already past midnight, set for next day
+                    tomorrow = tomorrow.replace(day=tomorrow.day + 1)
+                
+                # Calculate seconds until midnight
+                seconds_until_midnight = (tomorrow - now).total_seconds()
+                
+                logger.info(f"Scheduled next puzzle update in {seconds_until_midnight:.1f} seconds (at midnight)")
+                
+                # Sleep until midnight
+                time.sleep(seconds_until_midnight)
+                
+                # It's midnight, set a new random puzzle
+                logger.info("It's midnight! Setting new random daily puzzle")
                 set_random_daily()
-                # Sleep for one hour (3600 seconds)
-                time.sleep(3600)
+                
+                # Sleep for a minute to avoid running multiple times
+                time.sleep(60)
+                
             except Exception as e:
-                logger.error(f"Error in hourly scheduler: {e}")
-                # If there's an error, still try to continue after a delay
+                logger.error(f"Error in daily scheduler: {e}")
+                # Sleep for a minute before retrying
                 time.sleep(60)
     
     # Start the scheduler in a background thread
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-    logger.info("Hourly scheduler thread started")
+    thread = threading.Thread(target=run_scheduler, daemon=True)
+    thread.start()
+    logger.info("Daily scheduler thread started")
