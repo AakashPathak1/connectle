@@ -46,7 +46,7 @@ export default function ConfettiExplosion() {
     // Clean up after animation
     const timer = setTimeout(() => {
       setConfetti([])
-    }, 3000)
+    }, 2000)
 
     return () => clearTimeout(timer)
   }, [])
@@ -63,17 +63,23 @@ export default function ConfettiExplosion() {
             y: 0,
             rotate: 0,
             scale: 0,
+            opacity: 1,
           }}
           animate={{
             x: piece.x,
             y: piece.y,
             rotate: piece.rotation,
             scale: piece.scale,
+            opacity: [1, 1, 0], // Start fully visible, stay visible, then fade to transparent
           }}
           transition={{
             duration: piece.duration,
             delay: piece.delay,
             ease: [0.1, 0.25, 0.3, 1],
+            opacity: {
+              duration: piece.duration,
+              times: [0, 0.7, 1], // Start fade at 70% of the animation
+            }
           }}
         />
       ))}
