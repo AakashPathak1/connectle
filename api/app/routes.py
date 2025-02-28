@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from .services.game_service import GameService
+from . import limiter
 import logging
 
 main = Blueprint('main', __name__)
@@ -7,10 +8,12 @@ logger = logging.getLogger(__name__)
 game_service = GameService()
 
 @main.route('/api/daily-puzzle', methods=['GET'])
+@limiter.limit("30 per minute")
 def get_daily_puzzle():
     return game_service.get_daily_puzzle()
 
 @main.route('/api/validate-word', methods=['GET', 'POST'])
+@limiter.limit("60 per minute")
 def validate_word():
     logger.info(f"Received validate-word request: {request.data}")
     try:
@@ -31,6 +34,7 @@ def validate_word():
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @main.route('/api/get-hint', methods=['GET'])
+@limiter.limit("20 per minute")
 def get_hint():
     data = {
         'current_word': request.args.get('current_word'),
@@ -39,6 +43,7 @@ def get_hint():
     return game_service.get_hint(data)
 
 @main.route('/api/check-similarity', methods=['GET'])
+@limiter.limit("60 per minute")
 def check_similarity():
     data = {
         'word1': request.args.get('word1'),
@@ -47,6 +52,7 @@ def check_similarity():
     return game_service.check_similarity(data)
 
 @main.route('/api/check-word', methods=['GET'])
+@limiter.limit("60 per minute")
 def check_word():
     word = request.args.get('word')
     logger.info(f"Checking word validity: {word}")
