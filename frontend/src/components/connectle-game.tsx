@@ -350,6 +350,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
                 hint={hintData.hint}
                 message={hintData.message}
                 candidates={hintData.all_top_candidates}
+                wordChain={wordChain}
               />
             )}
           </AnimatePresence>

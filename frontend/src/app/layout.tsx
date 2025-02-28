@@ -21,22 +21,22 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Connectle",
   description: "A word association game that challenges you to connect words through semantic similarity",
-  icons: {
-    icon: [
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
-    ],
-    apple: { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    other: [
-      {
-        rel: 'mask-icon',
-        url: '/favicon.svg',
-        color: '#8B5CF6'
-      }
-    ]
-  },
-  manifest: '/site.webmanifest',
+  // icons: {
+  //   icon: [
+  //     { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+  //     { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+  //     { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+  //   ],
+  //   apple: { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+  //   other: [
+  //     {
+  //       rel: 'mask-icon',
+  //       url: '/favicon.svg',
+  //       color: '#8B5CF6'
+  //     }
+  //   ]
+  // },
+  // manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({
