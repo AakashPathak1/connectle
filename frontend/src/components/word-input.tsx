@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Lightbulb, Loader2 } from "lucide-react"
+import SimilarityMeter from "./similarity-meter"
 
 interface WordInputProps {
   onSubmit: (word: string) => void
@@ -64,7 +65,7 @@ export default function WordInput({
 
   // Helper function to determine color based on similarity
   const getSimilarityColor = (sim: number) => {
-    if (sim > 0.5) return "text-green-600 dark:text-green-400"
+    if (sim > 0.47) return "text-green-600 dark:text-green-400"
     if (sim === 0) return "text-red-600 dark:text-red-400"
     // Create a gradient from red to green
     return `text-[rgb(${Math.floor(255 - (sim * 2 * 255))},${Math.floor(sim * 2 * 255)},0)]`
@@ -101,15 +102,19 @@ export default function WordInput({
                     Not a valid English word
                   </span>
                 ) : similarity !== null && similarity !== undefined ? (
-                  similarity <= 0.5 ? (
-                    <span className="text-orange-600 dark:text-orange-400 font-semibold">
-                      Not similar enough: {(similarity * 100).toFixed(1)}%
-                    </span>
-                  ) : (
-                    <span className={`font-semibold ${getSimilarityColor(similarity)}`}>
-                      Similarity: {(similarity * 100).toFixed(1)}%
-                    </span>
-                  )
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className={`font-semibold ${similarity <= 0.47 ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}`}>
+                        {similarity <= 0.47 ? "Not similar enough (below 50%)" : "Similarity"}
+                      </span>
+                    </div>
+                    <SimilarityMeter 
+                      similarity={similarity} 
+                      threshold={0.47} 
+                      showPercentage={true} 
+                      height={10}
+                    />
+                  </div>
                 ) : null}
               </div>
             )}
@@ -126,11 +131,18 @@ export default function WordInput({
               </div>
             )}
             
-            {isSuccess && similarity !== null && similarity !== undefined && similarity > 0.5 && (
+            {isSuccess && similarity !== null && similarity !== undefined && similarity > 0.47 && (
               <div className="p-3 rounded-lg bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">
-                <span className="font-semibold">
-                  Word accepted! Similarity: {(similarity * 100).toFixed(1)}%
-                </span>
+                <div className="space-y-2">
+                  <span className="font-semibold">Word accepted!</span>
+                  <SimilarityMeter 
+                    similarity={similarity} 
+                    threshold={0.47} 
+                    showPercentage={true} 
+                    height={10}
+                    className="mt-2"
+                  />
+                </div>
               </div>
             )}
           </motion.div>

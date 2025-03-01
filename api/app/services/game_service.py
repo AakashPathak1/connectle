@@ -109,7 +109,7 @@ class GameService:
                 else:
                     # If not, calculate it based on similarity threshold
                     similarity = result["similarity"]
-                    is_valid = similarity > 0.5
+                    is_valid = similarity > 0.47
                 
                 # Check if there's an error message
                 message = result.get("message", None)
@@ -145,7 +145,11 @@ class GameService:
             hf_space_url = Config.HF_SPACE_URL
             response = requests.get(
                 f"{hf_space_url}/hint",
-                params={"current_word": current_word, "target_word": target_word}
+                params={
+                    "current_word": current_word, 
+                    "target_word": target_word,
+                    "threshold": 0.47  # Use the new threshold for finding hints
+                }
             )
             
             if response.status_code == 200:
