@@ -7,6 +7,7 @@ import WordChain from "./word-chain"
 import WordInput from "./word-input"
 import HintDisplay from "./hint-display"
 import ConfettiExplosion from "./confetti-explosion"
+import InfoButton from "./info-button"
 
 interface Puzzle {
   startWord: string
@@ -244,7 +245,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           return
         }
 
-        if (similarity > 0.5) {
+        if (similarity > 0.47) {
           setLastSimilarity(similarity)
           setInvalidWord(false)
           setWordChain([...wordChain, normalizedWord])
@@ -292,7 +293,10 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
       )}
       {showConfetti && <ConfettiExplosion />}
       
-      <motion.div className="w-full max-w-4xl mx-auto space-y-8">
+      <motion.div className="w-full max-w-4xl mx-auto space-y-8 relative">
+        <div className="absolute -top-2 left-0 z-10">
+          <InfoButton />
+        </div>
         <div className="grid md:grid-cols-2 gap-6">
           <WordCard 
             word={puzzle.startWord} 
