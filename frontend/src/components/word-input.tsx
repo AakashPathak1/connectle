@@ -63,13 +63,7 @@ export default function WordInput({
     setShouldFocusAndSelect(true)
   }
 
-  // Helper function to determine color based on similarity
-  const getSimilarityColor = (sim: number) => {
-    if (sim > 0.47) return "text-green-600 dark:text-green-400"
-    if (sim === 0) return "text-red-600 dark:text-red-400"
-    // Create a gradient from red to green
-    return `text-[rgb(${Math.floor(255 - (sim * 2 * 255))},${Math.floor(sim * 2 * 255)},0)]`
-  }
+  // Helper function is no longer used - removed to fix ESLint error
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
