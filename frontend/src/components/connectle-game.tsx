@@ -55,23 +55,8 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
   // Effect to show stats modal when game is won
   useEffect(() => {
     if (hasWon) {
-      console.log('hasWon changed to true, showing stats modal...');
-      // Set a small delay to ensure the DOM has updated
-      setTimeout(() => {
-        console.log('Forcing stats modal from useEffect...');
-        setShowStatsModal(true);
-        // Force a DOM refresh
-        document.body.classList.add('stats-modal-open');
-        
-        // Try again after a longer delay if needed
-        setTimeout(() => {
-          if (!document.querySelector('.stats-modal-container')) {
-            console.log('Second attempt to force stats modal...');
-            setShowStatsModal(true);
-            document.body.classList.add('stats-modal-open');
-          }
-        }, 1000);
-      }, 200);
+      console.log('hasWon changed to true, locking game...');
+      setIsGameLocked(true);
     }
   }, [hasWon]);
   const [wordAccepted, setWordAccepted] = useState(false)
@@ -204,16 +189,29 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         
         const validationData = await validationResponse.json()
         
-        if (!validationData.is_valid) {
+        // Extract similarity value regardless of is_valid flag
+        const similarityValue = validationData.similarity !== undefined 
+          ? validationData.similarity
+          : 0
+        
+        setLastSimilarity(similarityValue)
+        
+        // Special case: If this is the target word and similarity is high enough, allow it
+        const isTargetWord = normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()
+        
+        // If the word is the target word and similarity is high enough, we should accept it
+        // regardless of what the API says about validity
+        if (isTargetWord && similarityValue > 0.47) {
+          console.log(`Target word ${normalizedWord} detected with similarity ${similarityValue} > 0.47, accepting it`)
+          // Continue to the winning logic below
+        } 
+        // Otherwise, check the API's validity response
+        else if (!validationData.is_valid) {
           if (validationData.error === "not_a_word") {
             setInvalidWord(true)
             setLastSimilarity(null)
           } else {
             // This is for words that are valid English words but not similar enough
-            const similarityValue = validationData.similarity !== undefined 
-              ? validationData.similarity
-              : 0
-              
             // If similarity is 0, treat as invalid word
             if (similarityValue === 0) {
               setInvalidWord(true)
@@ -221,7 +219,6 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
               setInvalidWord(false)
             }
             
-            setLastSimilarity(similarityValue)
             setWordError(null)
           }
           setIsCheckingWord(false)
@@ -229,11 +226,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           return
         }
         
-        // If we got here, the word is valid, but we need to check if it's similar enough
-        const similarityValue = validationData.similarity !== undefined 
-          ? validationData.similarity
-          : 0
-        setLastSimilarity(similarityValue)
+        // We've already extracted similarityValue above, so we don't need to do it again
         
         // Make sure the similarity is above the threshold (0.47 or 47%)
         if (similarityValue <= 0.47) {
@@ -265,15 +258,16 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         // Check if the player has won
         // Now we can be sure the word is both valid AND similar enough
         if (normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
-          console.log('Game completed! Word is valid and similar enough. Showing stats modal...')
+          console.log('Game completed! Word is valid and similar enough.')
           setWordError("Congratulations! You've completed the puzzle! 🎉")
           setShowConfetti(true)
           setHasWon(true)
+          setIsGameLocked(true) // Lock the game immediately
+          
           // Show stats modal after a short delay to allow animations to complete
           setTimeout(() => {
+            console.log('Opening stats modal after valid word submission')
             setShowStatsModal(true)
-            // Force a DOM refresh
-            document.body.classList.add('stats-modal-open')
           }, 500)
         }
         
@@ -299,7 +293,10 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           return
         }
 
-        if (similarity > 0.47) {
+        // Special case: If this is the target word and similarity is high enough, always accept it
+        const isTargetWord = normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()
+
+        if (similarity > 0.47 || (isTargetWord && similarity > 0.47)) {
           setLastSimilarity(similarity)
           setInvalidWord(false)
           setWordChain([...wordChain, normalizedWord])
@@ -309,16 +306,17 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           setWordAccepted(true)
           
           // Check if we've reached the end word - but only if similarity is high enough
-          if (normalizedWord === puzzle.endWord.toLowerCase() && similarity > 0.47) {
-            console.log('Game completed in fallback path! Word is valid and similar enough. Showing stats modal...')
+          if (isTargetWord) {
+            console.log('Game completed in fallback path! Word is valid and similar enough.')
             setWordError("Congratulations! You've completed the puzzle! 🎉")
             setShowConfetti(true)
             setHasWon(true)
+            setIsGameLocked(true) // Lock the game immediately
+            
             // Show stats modal after a short delay
             setTimeout(() => {
+              console.log('Opening stats modal after valid word submission (fallback path)')
               setShowStatsModal(true)
-              // Force a DOM refresh
-              document.body.classList.add('stats-modal-open')
             }, 500)
           }
         } else {
@@ -356,7 +354,14 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
       {/* Stats Modal with Confetti */}
       <StatsModal 
         isOpen={showStatsModal}
-        onClose={() => setShowStatsModal(false)}
+        onClose={() => {
+          setShowStatsModal(false);
+          // Always lock the game after closing the modal if the game has been won
+          if (hasWon) {
+            console.log('Game won, locking game after modal close');
+            setIsGameLocked(true);
+          }
+        }}
         wordChain={wordChain}
         hintsUsed={hintsUsed}
         startWord={puzzle.startWord}

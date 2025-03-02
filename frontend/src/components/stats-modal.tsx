@@ -214,7 +214,10 @@ Play at connectle-game.vercel.app`;
                 <button
                   onClick={() => {
                     // Lock the game when closing the modal
-                    if (lockGame) lockGame();
+                    if (lockGame) {
+                      console.log('Locking game from modal close button');
+                      lockGame();
+                    }
                     onClose();
                   }}
                   className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
