@@ -47,20 +47,61 @@ export default function WordInput({
       // Small delay to ensure the focus happens after the UI updates
       setTimeout(() => {
         if (inputRef.current) {
+          // Focus with a user activation event to keep mobile keyboard open
           inputRef.current.focus()
           inputRef.current.select()
+          
+          // On mobile, try to force the keyboard to stay open
+          if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            // Touch events can help keep the keyboard open on some mobile browsers
+            inputRef.current.click()
+            
+            // For iOS specifically
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+              // iOS sometimes needs a double-tap approach
+              setTimeout(() => {
+                if (inputRef.current) {
+                  inputRef.current.focus()
+                }
+              }, 100)
+            }
+          }
         }
       }, 50)
       setShouldFocusAndSelect(false)
     }
   }, [shouldFocusAndSelect, isProcessing])
 
-  // Focus on initial render
+  // Focus on initial render with enhanced mobile support
   useEffect(() => {
     if (inputRef.current) {
+      // Focus with a user activation event to keep mobile keyboard open
       inputRef.current.focus()
+      
+      // On mobile, try to force the keyboard to stay open
+      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        // Touch events can help keep the keyboard open on some mobile browsers
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.click()
+          }
+        }, 100)
+      }
     }
   }, [])
+
+  // Prevent the input from losing focus on mobile
+  const preventBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Only prevent blur on mobile devices and when not disabled
+    if (!disabled && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      // This timeout allows other events to process but quickly refocuses
+      setTimeout(() => {
+        if (inputRef.current && !disabled && !isProcessing) {
+          inputRef.current.focus()
+        }
+      }, 10)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +123,8 @@ export default function WordInput({
           onChange={(e) => {
             setCurrentWord(e.target.value.toLowerCase())
           }}
+          onBlur={preventBlur}
+          onClick={() => inputRef.current?.focus()}
           placeholder={disabled ? "🎉 Game completed!" : "Enter your next word"}
           className={`w-full p-3 text-base ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
           disabled={isProcessing || disabled}
@@ -91,6 +134,8 @@ export default function WordInput({
           autoCorrect="off"
           data-lpignore="true"
           enterKeyHint="go"
+          inputMode="text"
+          autoFocus
         />
       </div>
 
