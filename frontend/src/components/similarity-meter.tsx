@@ -61,7 +61,7 @@ export default function SimilarityMeter({
         
         {/* Threshold marker */}
         <div 
-          className="absolute -top-1 h-[calc(100%+8px)] w-1 bg-black dark:bg-black z-10 shadow-[0_0_2px_1px_rgba(0,0,0,0.3)] dark:shadow-[0_0_2px_1px_rgba(0,0,0,0.7)]"
+          className="absolute -top-2 h-[calc(100%+12px)] w-[2px] bg-black dark:bg-black z-10"
           style={{ left: `${threshold * 100}%` }}
         />
       </div>
