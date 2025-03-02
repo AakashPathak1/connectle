@@ -141,7 +141,7 @@ export default function WordInput({
       dummy.style.left = '-1000px'
       dummy.style.top = '0'
       // Prevent the dummy input from causing scroll jumps
-      dummy.addEventListener('focus', (e) => {
+      dummy.addEventListener('focus', () => {
         // Store current scroll position when dummy gets focus
         setScrollPosition(window.scrollY)
       })
