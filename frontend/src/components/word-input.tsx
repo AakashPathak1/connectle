@@ -7,6 +7,21 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Lightbulb, Loader2 } from "lucide-react"
 import SimilarityMeter from "./similarity-meter"
 
+// Define the VirtualKeyboard interface for TypeScript
+interface VirtualKeyboard extends EventTarget {
+  overlaysContent: boolean
+  boundingRect: DOMRect
+  show(): void
+  hide(): void
+}
+
+// Extend Navigator interface to include virtualKeyboard
+declare global {
+  interface Navigator {
+    virtualKeyboard?: VirtualKeyboard
+  }
+}
+
 interface WordInputProps {
   onSubmit: (word: string) => void
   onBacktrack: () => void
@@ -80,6 +95,11 @@ export default function WordInput({
       
       // On mobile, try to force the keyboard to stay open
       if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        // Initialize VirtualKeyboard API if supported
+        if ('virtualKeyboard' in navigator && navigator.virtualKeyboard) {
+          navigator.virtualKeyboard.overlaysContent = true
+        }
+        
         // Touch events can help keep the keyboard open on some mobile browsers
         setTimeout(() => {
           if (inputRef.current) {
@@ -112,14 +132,25 @@ export default function WordInput({
     
     // Force focus to keep mobile keyboard open
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-      // Use a short timeout to allow the submission to process
-      setTimeout(() => {
-        if (inputRef.current) {
-          // Force click and focus to keep keyboard open
-          inputRef.current.click()
-          inputRef.current.focus()
-        }
-      }, 50)
+      // Use the VirtualKeyboard API if available
+      if ('virtualKeyboard' in navigator && navigator.virtualKeyboard) {
+        // Ensure the keyboard stays visible
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus()
+            navigator.virtualKeyboard?.show()
+          }
+        }, 50)
+      } else {
+        // Fallback for browsers without VirtualKeyboard API
+        setTimeout(() => {
+          if (inputRef.current) {
+            // Force click and focus to keep keyboard open
+            inputRef.current.click()
+            inputRef.current.focus()
+          }
+        }, 50)
+      }
     }
   }
 
