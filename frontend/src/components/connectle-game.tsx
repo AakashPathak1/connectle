@@ -162,17 +162,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
     
     const normalizedWord = submittedWord.trim().toLowerCase()
     
-    // Direct check for game completion
-    if (normalizedWord === puzzle.endWord.toLowerCase()) {
-      console.log('Direct check in handleWordSubmit: End word detected!')
-      // Force the modal to show after a short delay
-      setTimeout(() => {
-        console.log('Forcing stats modal to show...');
-        setShowStatsModal(true);
-        // Force a DOM refresh
-        document.body.classList.add('stats-modal-open');
-      }, 500);
-    }
+    // Removed direct check for game completion - we'll only check after similarity validation
     
     // Don't allow submitting the same word as the last one in the chain
     if (wordChain.length > 0 && normalizedWord === wordChain[wordChain.length - 1].toLowerCase()) {
@@ -239,12 +229,30 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           return
         }
         
-        // If we got here, the word is valid, proceed with the game
+        // If we got here, the word is valid, but we need to check if it's similar enough
         const similarityValue = validationData.similarity !== undefined 
           ? validationData.similarity
           : 0
         setLastSimilarity(similarityValue)
         
+        // Make sure the similarity is above the threshold (0.47 or 47%)
+        if (similarityValue <= 0.47) {
+          console.log(`Word ${normalizedWord} has similarity ${similarityValue} which is below threshold 0.47`)
+          // Special message if they're trying to jump directly to the target word
+          if (normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
+            console.log('Target word detected but similarity is too low!')
+            setWordError("You found the target word, but it's not similar enough to your previous word. Find a path of similar words!")
+          } else {
+            setWordError("Word is valid but not similar enough to your previous word.")
+          }
+          setIsCheckingWord(false)
+          setIsProcessing(false)
+          return
+        }
+        
+        console.log(`Word ${normalizedWord} has similarity ${similarityValue} which is above threshold 0.47`)
+        
+        // If we got here, the word is both valid and similar enough
         const newWordChain = [...wordChain, normalizedWord]
         setWordChain(newWordChain)
         // Clear the input field but don't lose focus
@@ -255,13 +263,18 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         setWordAccepted(true)
         
         // Check if the player has won
+        // Now we can be sure the word is both valid AND similar enough
         if (normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
-          console.log('Game completed! (First code path) Showing stats modal...')
+          console.log('Game completed! Word is valid and similar enough. Showing stats modal...')
           setWordError("Congratulations! You've completed the puzzle! 🎉")
           setShowConfetti(true)
           setHasWon(true)
-          // Show stats modal immediately
-          setShowStatsModal(true)
+          // Show stats modal after a short delay to allow animations to complete
+          setTimeout(() => {
+            setShowStatsModal(true)
+            // Force a DOM refresh
+            document.body.classList.add('stats-modal-open')
+          }, 500)
         }
         
         return
@@ -295,14 +308,18 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           setHintData(null)
           setWordAccepted(true)
           
-          // Check if we've reached the end word
-          if (normalizedWord === puzzle.endWord.toLowerCase()) {
-            console.log('Game completed! Showing stats modal...')
+          // Check if we've reached the end word - but only if similarity is high enough
+          if (normalizedWord === puzzle.endWord.toLowerCase() && similarity > 0.47) {
+            console.log('Game completed in fallback path! Word is valid and similar enough. Showing stats modal...')
             setWordError("Congratulations! You've completed the puzzle! 🎉")
             setShowConfetti(true)
             setHasWon(true)
-            // Show stats modal immediately
-            setShowStatsModal(true)
+            // Show stats modal after a short delay
+            setTimeout(() => {
+              setShowStatsModal(true)
+              // Force a DOM refresh
+              document.body.classList.add('stats-modal-open')
+            }, 500)
           }
         } else {
           setLastSimilarity(similarity)
