@@ -39,6 +39,7 @@ export default function WordInput({
   disabled = false
 }: WordInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const hiddenInputRef = useRef<HTMLInputElement>(null)
   const [shouldFocusAndSelect, setShouldFocusAndSelect] = useState(false)
 
   // Only focus and select when explicitly triggered
@@ -107,19 +108,35 @@ export default function WordInput({
     e.preventDefault()
     if (!currentWord.trim() || isProcessing || disabled) return
     onSubmit(currentWord.trim())
-    // Set flag to focus and select after submission is processed
-    setShouldFocusAndSelect(true)
     
-    // For mobile devices, simulate a click on the input to ensure keyboard opens again
+    // Clear the current word immediately to provide visual feedback
+    setCurrentWord('')
+    
+    // For mobile devices, use a completely different approach with hidden input
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      // Use a slightly longer delay to ensure the submission is processed
       setTimeout(() => {
-        if (inputRef.current && !disabled) {
-          // Simulate a click on the input element
-          inputRef.current.click()
-          // Focus the input again
-          inputRef.current.focus()
+        if (!disabled && !isProcessing) {
+          // First focus the hidden input to trigger keyboard
+          if (hiddenInputRef.current) {
+            hiddenInputRef.current.focus()
+            hiddenInputRef.current.click()
+            
+            // Then quickly switch focus to the main input
+            setTimeout(() => {
+              if (inputRef.current) {
+                inputRef.current.focus()
+              }
+            }, 50)
+          } else if (inputRef.current) {
+            // Fallback to direct focus if hidden input isn't available
+            inputRef.current.focus()
+          }
         }
-      }, 300) // Slightly longer delay to ensure processing has started
+      }, 300)
+    } else {
+      // For non-mobile, just set the flag to focus and select
+      setShouldFocusAndSelect(true)
     }
   }
 
@@ -127,6 +144,15 @@ export default function WordInput({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Hidden input field to help trigger mobile keyboard */}
+      <input
+        ref={hiddenInputRef}
+        type="text"
+        className="opacity-0 h-0 w-0 absolute pointer-events-none"
+        tabIndex={-1}
+        aria-hidden="true"
+        autoComplete="off"
+      />
       <div className="relative">
         <Input
           ref={inputRef}
