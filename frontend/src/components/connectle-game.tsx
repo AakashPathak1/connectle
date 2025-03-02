@@ -257,7 +257,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         
         // Force focus on the input field to keep mobile keyboard open
         setTimeout(() => {
-          const inputElement = document.querySelector('input[type="text"]')
+          const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement
           if (inputElement && !isTargetWord) {
             // Force click and focus to keep keyboard open
             inputElement.click()
@@ -317,7 +317,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           
           // Force focus on the input field to keep mobile keyboard open
           setTimeout(() => {
-            const inputElement = document.querySelector('input[type="text"]')
+            const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement
             if (inputElement && !isTargetWord) {
               // Force click and focus to keep keyboard open
               inputElement.click()
