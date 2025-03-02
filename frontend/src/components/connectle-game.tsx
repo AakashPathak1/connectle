@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import WordCard from "./word-card"
 import WordChain from "./word-chain"
 import WordInput from "./word-input"
 import HintDisplay from "./hint-display"
-import ConfettiExplosion from "./confetti-explosion"
 import InfoButton from "./info-button"
+import StatsModal from "./stats-modal"
 
 interface Puzzle {
   startWord: string
@@ -49,6 +49,31 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
   const [isProcessing, setIsProcessing] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [hasWon, setHasWon] = useState(false)
+  const [showStatsModal, setShowStatsModal] = useState(false)
+  const [isGameLocked, setIsGameLocked] = useState(false)
+  
+  // Effect to show stats modal when game is won
+  useEffect(() => {
+    if (hasWon) {
+      console.log('hasWon changed to true, showing stats modal...');
+      // Set a small delay to ensure the DOM has updated
+      setTimeout(() => {
+        console.log('Forcing stats modal from useEffect...');
+        setShowStatsModal(true);
+        // Force a DOM refresh
+        document.body.classList.add('stats-modal-open');
+        
+        // Try again after a longer delay if needed
+        setTimeout(() => {
+          if (!document.querySelector('.stats-modal-container')) {
+            console.log('Second attempt to force stats modal...');
+            setShowStatsModal(true);
+            document.body.classList.add('stats-modal-open');
+          }
+        }, 1000);
+      }, 200);
+    }
+  }, [hasWon]);
   const [wordAccepted, setWordAccepted] = useState(false)
   const [gameError, setGameError] = useState<string | null>(null)
 
@@ -137,6 +162,18 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
     
     const normalizedWord = submittedWord.trim().toLowerCase()
     
+    // Direct check for game completion
+    if (normalizedWord === puzzle.endWord.toLowerCase()) {
+      console.log('Direct check in handleWordSubmit: End word detected!')
+      // Force the modal to show after a short delay
+      setTimeout(() => {
+        console.log('Forcing stats modal to show...');
+        setShowStatsModal(true);
+        // Force a DOM refresh
+        document.body.classList.add('stats-modal-open');
+      }, 500);
+    }
+    
     // Don't allow submitting the same word as the last one in the chain
     if (wordChain.length > 0 && normalizedWord === wordChain[wordChain.length - 1].toLowerCase()) {
       setWordError("You already used this word. Try a different one.")
@@ -210,7 +247,8 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         
         const newWordChain = [...wordChain, normalizedWord]
         setWordChain(newWordChain)
-        setCurrentWord("")  // Clear the input field
+        // Clear the input field but don't lose focus
+        setCurrentWord("")
         setIsCheckingWord(false)
         // Clear hint data when a valid word is submitted
         setHintData(null)
@@ -218,9 +256,12 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         
         // Check if the player has won
         if (normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
+          console.log('Game completed! (First code path) Showing stats modal...')
           setWordError("Congratulations! You've completed the puzzle! 🎉")
           setShowConfetti(true)
           setHasWon(true)
+          // Show stats modal immediately
+          setShowStatsModal(true)
         }
         
         return
@@ -256,9 +297,12 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           
           // Check if we've reached the end word
           if (normalizedWord === puzzle.endWord.toLowerCase()) {
+            console.log('Game completed! Showing stats modal...')
             setWordError("Congratulations! You've completed the puzzle! 🎉")
             setShowConfetti(true)
             setHasWon(true)
+            // Show stats modal immediately
+            setShowStatsModal(true)
           }
         } else {
           setLastSimilarity(similarity)
@@ -291,7 +335,19 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           </button>
         </div>
       )}
-      {showConfetti && <ConfettiExplosion />}
+      
+      {/* Stats Modal with Confetti */}
+      <StatsModal 
+        isOpen={showStatsModal}
+        onClose={() => setShowStatsModal(false)}
+        wordChain={wordChain}
+        hintsUsed={hintsUsed}
+        startWord={puzzle.startWord}
+        endWord={puzzle.endWord}
+        showConfetti={showConfetti}
+        lockGame={() => setIsGameLocked(true)}
+      />
+      
       
       <motion.div className="w-full max-w-4xl mx-auto space-y-8 relative">
         <div className="absolute -top-2 left-0 z-10">
@@ -337,15 +393,16 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
             onSubmit={handleWordSubmit}
             onBacktrack={handleBacktrack}
             onRequestHint={getHint}
-            isProcessing={isProcessing}
+            isProcessing={isProcessing || isGameLocked}
             isHintLoading={isLoadingHint}
             currentWord={currentWord}
             setCurrentWord={setCurrentWord}
             wordChainLength={wordChain.length}
             similarity={lastSimilarity}
-            errorMessage={wordError}
+            errorMessage={isGameLocked ? "🎉 Congratulations! You've finished today's game." : wordError}
             isInvalidWord={invalidWord}
             isSuccess={wordAccepted || hasWon}
+            disabled={isGameLocked}
           />
           
           <AnimatePresence>
@@ -360,6 +417,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           </AnimatePresence>
         </motion.div>
       </motion.div>
+
     </div>
   )
 }

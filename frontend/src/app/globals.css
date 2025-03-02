@@ -3,13 +3,37 @@
 @tailwind utilities;
 
 /* Modal styling */
-body.modal-open > *:not(.info-modal-container) {
+body.modal-open > *:not(.info-modal-container):not(.stats-modal-container):not(.confetti-container) {
   visibility: hidden !important;
 }
 
 body.modal-open .info-modal-container,
-body.modal-open .info-modal-container * {
+body.modal-open .info-modal-container *,
+body.modal-open .stats-modal-container,
+body.modal-open .stats-modal-container * {
   visibility: visible !important;
+}
+
+/* Specific styling for stats modal */
+body.stats-modal-open > *:not(.stats-modal-container):not(.confetti-container) {
+  visibility: hidden !important;
+}
+
+body.stats-modal-open .stats-modal-container,
+body.stats-modal-open .stats-modal-container * {
+  visibility: visible !important;
+  z-index: 100000 !important;
+}
+
+/* Ensure confetti is always visible and on top */
+.confetti-container {
+  visibility: visible !important;
+  z-index: 999999 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
 }
 
 @layer base {
