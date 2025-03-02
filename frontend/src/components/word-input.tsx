@@ -91,7 +91,7 @@ export default function WordInput({
   }, [])
 
   // Prevent the input from losing focus on mobile
-  const preventBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const preventBlur = () => {
     // Only prevent blur on mobile devices and when not disabled
     if (!disabled && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
       // This timeout allows other events to process but quickly refocuses
