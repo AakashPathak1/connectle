@@ -109,6 +109,18 @@ export default function WordInput({
     onSubmit(currentWord.trim())
     // Set flag to focus and select after submission is processed
     setShouldFocusAndSelect(true)
+    
+    // Force focus to keep mobile keyboard open
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      // Use a short timeout to allow the submission to process
+      setTimeout(() => {
+        if (inputRef.current) {
+          // Force click and focus to keep keyboard open
+          inputRef.current.click()
+          inputRef.current.focus()
+        }
+      }, 50)
+    }
   }
 
   // Helper function is no longer used - removed to fix ESLint error

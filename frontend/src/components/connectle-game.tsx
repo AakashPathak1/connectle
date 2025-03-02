@@ -255,6 +255,16 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         setHintData(null)
         setWordAccepted(true)
         
+        // Force focus on the input field to keep mobile keyboard open
+        setTimeout(() => {
+          const inputElement = document.querySelector('input[type="text"]')
+          if (inputElement && !isTargetWord) {
+            // Force click and focus to keep keyboard open
+            inputElement.click()
+            inputElement.focus()
+          }
+        }, 100)
+        
         // Check if the player has won
         // Now we can be sure the word is both valid AND similar enough
         if (normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
@@ -304,6 +314,16 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
           // Clear hint data when a valid word is submitted
           setHintData(null)
           setWordAccepted(true)
+          
+          // Force focus on the input field to keep mobile keyboard open
+          setTimeout(() => {
+            const inputElement = document.querySelector('input[type="text"]')
+            if (inputElement && !isTargetWord) {
+              // Force click and focus to keep keyboard open
+              inputElement.click()
+              inputElement.focus()
+            }
+          }, 100)
           
           // Check if we've reached the end word - but only if similarity is high enough
           if (isTargetWord) {
