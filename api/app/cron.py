@@ -125,11 +125,21 @@ def set_random_daily():
         logger.error(f"Error in daily task: {e}")
         return {"status": "error", "message": str(e)}
 
+# Global variable to track if scheduler is running
+_scheduler_running = False
+
 # Daily scheduler function
 def start_daily_scheduler():
     """
     Start a background thread that runs set_random_daily at midnight every day.
     """
+    global _scheduler_running
+    
+    # Only start if not already running
+    if _scheduler_running:
+        logger.info("Daily scheduler already running, skipping")
+        return
+    
     def run_scheduler():
         logger.info("Starting daily scheduler thread")
         
@@ -154,7 +164,8 @@ def start_daily_scheduler():
                 
                 # It's midnight, set a new random puzzle
                 logger.info("It's midnight! Setting new random daily puzzle")
-                set_random_daily()
+                success = set_random_daily()
+                logger.info(f"Midnight puzzle update result: {success}")
                 
                 # Sleep for a minute to avoid running multiple times
                 time.sleep(60)
@@ -167,4 +178,36 @@ def start_daily_scheduler():
     # Start the scheduler in a background thread
     thread = threading.Thread(target=run_scheduler, daemon=True)
     thread.start()
+    _scheduler_running = True
     logger.info("Daily scheduler thread started")
+    
+    # Check if we need to set a daily puzzle right now
+    check_and_set_daily_if_needed()
+
+def check_and_set_daily_if_needed():
+    """
+    Check if there's a daily puzzle, and set one if needed.
+    This ensures we always have a daily puzzle, even if the server was down at midnight.
+    """
+    try:
+        # Initialize Supabase client
+        if not init_supabase():
+            logger.error("Failed to initialize Supabase client when checking for daily puzzle")
+            return False
+        
+        # Create Supabase client
+        supabase = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
+        
+        # Check if there's a daily puzzle
+        logger.info("Checking if daily puzzle exists")
+        response = supabase.table('puzzles').select('*').eq('is_daily', True).execute()
+        
+        if not response.data:
+            logger.info("No daily puzzle found, setting one now")
+            return set_random_daily()
+        else:
+            logger.info(f"Daily puzzle exists: {response.data[0]['start_word']} -> {response.data[0]['end_word']}")
+            return {"status": "success", "message": "Daily puzzle already exists"}
+    except Exception as e:
+        logger.error(f"Error checking daily puzzle: {str(e)}")
+        return {"status": "error", "message": str(e)}

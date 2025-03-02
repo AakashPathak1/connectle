@@ -33,6 +33,17 @@ def admin_set_random_daily():
     logger.info(f"Manual trigger result: {result}")
     return result
 
+# Add a cron endpoint that can be called by external cron services (e.g., cron-job.org)
+@app.route('/api/cron/set-random-daily', methods=['GET'])
+def cron_set_random_daily():
+    # Import here to avoid circular imports
+    from app.cron import set_random_daily
+    
+    logger.info("Cron service trigger: set_random_daily()")
+    result = set_random_daily()
+    logger.info(f"Cron service trigger result: {result}")
+    return result
+
 # Handle Vercel serverless environment
 if os.environ.get('VERCEL_ENV') == 'production':
     app.debug = False
