@@ -123,33 +123,80 @@ export default function WordInput({
     }
   }
 
+  // Create a dummy input element to help maintain keyboard focus
+  const [dummyInput, setDummyInput] = useState<HTMLInputElement | null>(null)
+
+  // Initialize the dummy input on component mount
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const dummy = document.createElement('input')
+      dummy.setAttribute('type', 'text')
+      dummy.setAttribute('autocomplete', 'off')
+      dummy.style.position = 'absolute'
+      dummy.style.opacity = '0'
+      dummy.style.height = '0'
+      dummy.style.fontSize = '16px' // Prevents zoom on iOS
+      dummy.style.left = '-1000px'
+      dummy.style.top = '0'
+      document.body.appendChild(dummy)
+      setDummyInput(dummy)
+
+      return () => {
+        if (dummy && dummy.parentNode) {
+          dummy.parentNode.removeChild(dummy)
+        }
+      }
+    }
+  }, [])
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentWord.trim() || isProcessing || disabled) return
+    
+    // Use the dummy input to maintain keyboard focus during submission
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    if (isMobile && dummyInput) {
+      // Focus the dummy input to prevent keyboard from closing
+      dummyInput.focus()
+    }
+    
+    // Submit the word
     onSubmit(currentWord.trim())
+    
     // Set flag to focus and select after submission is processed
     setShouldFocusAndSelect(true)
     
-    // Force focus to keep mobile keyboard open
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    // Force focus to keep mobile keyboard open using multiple techniques
+    if (isMobile) {
       // Use the VirtualKeyboard API if available
       if ('virtualKeyboard' in navigator && navigator.virtualKeyboard) {
-        // Ensure the keyboard stays visible
+        navigator.virtualKeyboard.overlaysContent = true
         setTimeout(() => {
           if (inputRef.current) {
+            // Return focus to the real input
             inputRef.current.focus()
             navigator.virtualKeyboard?.show()
           }
-        }, 50)
+        }, 10)
       } else {
-        // Fallback for browsers without VirtualKeyboard API
+        // Use multiple techniques to try to keep keyboard open
         setTimeout(() => {
           if (inputRef.current) {
-            // Force click and focus to keep keyboard open
+            // Try to trigger a user activation event
             inputRef.current.click()
             inputRef.current.focus()
+            
+            // On iOS, this can sometimes help
+            if (dummyInput) {
+              dummyInput.focus()
+              setTimeout(() => {
+                if (inputRef.current) {
+                  inputRef.current.focus()
+                }
+              }, 10)
+            }
           }
-        }, 50)
+        }, 10)
       }
     }
   }
