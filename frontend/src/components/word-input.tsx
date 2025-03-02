@@ -109,6 +109,18 @@ export default function WordInput({
     onSubmit(currentWord.trim())
     // Set flag to focus and select after submission is processed
     setShouldFocusAndSelect(true)
+    
+    // For mobile devices, simulate a click on the input to ensure keyboard opens again
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      setTimeout(() => {
+        if (inputRef.current && !disabled) {
+          // Simulate a click on the input element
+          inputRef.current.click()
+          // Focus the input again
+          inputRef.current.focus()
+        }
+      }, 300) // Slightly longer delay to ensure processing has started
+    }
   }
 
   // Helper function is no longer used - removed to fix ESLint error
