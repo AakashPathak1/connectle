@@ -28,7 +28,8 @@ export default function ConfettiExplosion() {
 
     const pieces: ConfettiPiece[] = []
 
-    for (let i = 0; i < 100; i++) {
+    // Create more confetti pieces for a more dramatic effect
+    for (let i = 0; i < 150; i++) {
       pieces.push({
         id: i,
         x: Math.random() * 500 - 250,
@@ -52,7 +53,18 @@ export default function ConfettiExplosion() {
   }, [])
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+    <div 
+      className="fixed inset-0 pointer-events-none overflow-hidden confetti-container" 
+      style={{ 
+        zIndex: 999999, 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        pointerEvents: 'none'
+      }}
+    >
       {confetti.map((piece) => (
         <motion.div
           key={piece.id}
