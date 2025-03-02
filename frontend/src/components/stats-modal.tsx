@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import ConfettiExplosion from "./confetti-explosion"
+import { trackUIEvents } from "../utils/analytics"
 
 interface StatsModalProps {
   isOpen: boolean
@@ -38,6 +39,8 @@ export default function StatsModal({
     console.log('Hints used:', hintsUsed)
     
     if (isOpen) {
+      // Track stats modal view
+      trackUIEvents.viewRules();
       console.log('Initializing stats modal...')
       // Add classes to the body to handle modal open state
       document.body.classList.add('modal-open')
@@ -104,6 +107,9 @@ export default function StatsModal({
 🔄 Chain: ${chainLength} words
 💡 Hints: ${hintsUsed}
 Play at connectle-game.vercel.app`;
+
+    // Track share event
+    trackUIEvents.shareGame('clipboard');
 
     navigator.clipboard.writeText(statsText)
       .then(() => {

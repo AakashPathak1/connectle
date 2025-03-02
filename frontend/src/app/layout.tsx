@@ -1,5 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Nunito_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { AnalyticsProvider } from "@/providers/analytics-provider";
+import PageViewTracker from "@/components/page-view-tracker";
+import ErrorBoundary from "@/components/error-boundary";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -53,7 +58,14 @@ export default function RootLayout({
       <body
         className={`${nunito.variable} ${nunitoSans.variable} font-nunito antialiased`}
       >
-        {children}
+        <AnalyticsProvider>
+          <PageViewTracker />
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </AnalyticsProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

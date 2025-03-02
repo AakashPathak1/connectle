@@ -8,6 +8,7 @@ import WordInput from "./word-input"
 import HintDisplay from "./hint-display"
 import InfoButton from "./info-button"
 import StatsModal from "./stats-modal"
+import { trackGameEvents } from "../utils/analytics"
 
 interface Puzzle {
   startWord: string
@@ -51,14 +52,19 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
   const [hasWon, setHasWon] = useState(false)
   const [showStatsModal, setShowStatsModal] = useState(false)
   const [isGameLocked, setIsGameLocked] = useState(false)
+  const [gameStartTime] = useState<number>(Date.now())
   
   // Effect to show stats modal when game is won
   useEffect(() => {
     if (hasWon) {
       console.log('hasWon changed to true, locking game...');
       setIsGameLocked(true);
+      
+      // Track game completion
+      const timeSpent = Date.now() - gameStartTime;
+      trackGameEvents.completeGame(wordChain.length, timeSpent);
     }
-  }, [hasWon]);
+  }, [hasWon, wordChain.length, gameStartTime]);
   const [wordAccepted, setWordAccepted] = useState(false)
   const [gameError, setGameError] = useState<string | null>(null)
 
@@ -103,11 +109,17 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
     setLastSimilarity(null)
     setInvalidWord(false)
     setHintData(null)
+    
+    // Track backtrack event
+    trackGameEvents.backtrack(newWordChain.length);
   }
 
   // Get a hint
   const getHint = async () => {
     if (isLoadingHint || wordChain.length === 0 || isProcessing) return
+    
+    // Track hint request
+    trackGameEvents.requestHint();
     
     setIsLoadingHint(true)
     setIsProcessing(true)
@@ -255,6 +267,9 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         setHintData(null)
         setWordAccepted(true)
         
+        // Track successful word submission
+        trackGameEvents.wordSubmitted(normalizedWord, true, similarityValue)
+        
         // Check if the player has won
         // Now we can be sure the word is both valid AND similar enough
         if (normalizedWord.toLowerCase() === puzzle.endWord.toLowerCase()) {
@@ -274,6 +289,8 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         return
       } catch (error) {
         console.error("Error validating word:", error)
+        // Track error
+        trackGameEvents.error("validation_error", String(error));
         // If validation fails, fall back to checking similarity directly
       }
 
