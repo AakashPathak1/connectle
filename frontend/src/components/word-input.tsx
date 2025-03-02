@@ -125,6 +125,8 @@ export default function WordInput({
 
   // Create a dummy input element to help maintain keyboard focus
   const [dummyInput, setDummyInput] = useState<HTMLInputElement | null>(null)
+  // Keep track of the scroll position
+  const [scrollPosition, setScrollPosition] = useState<number | null>(null)
 
   // Initialize the dummy input on component mount
   useEffect(() => {
@@ -138,6 +140,11 @@ export default function WordInput({
       dummy.style.fontSize = '16px' // Prevents zoom on iOS
       dummy.style.left = '-1000px'
       dummy.style.top = '0'
+      // Prevent the dummy input from causing scroll jumps
+      dummy.addEventListener('focus', (e) => {
+        // Store current scroll position when dummy gets focus
+        setScrollPosition(window.scrollY)
+      })
       document.body.appendChild(dummy)
       setDummyInput(dummy)
 
@@ -149,9 +156,86 @@ export default function WordInput({
     }
   }, [])
   
+  // Restore scroll position when needed
+  useEffect(() => {
+    if (scrollPosition !== null) {
+      // Restore the scroll position after a brief delay
+      const timer = setTimeout(() => {
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: 'auto'
+        })
+      }, 10)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [scrollPosition])
+  
+  // Add CSS to prevent scroll issues
+  useEffect(() => {
+    // Add a style tag to fix mobile keyboard issues
+    if (typeof document !== 'undefined') {
+      const style = document.createElement('style')
+      style.innerHTML = `
+        .fixed-input-container {
+          position: relative;
+          z-index: 1000;
+        }
+        .fixed-input {
+          position: relative;
+          z-index: 1001;
+        }
+        body.keyboard-open {
+          position: fixed;
+          width: 100%;
+          height: var(--window-height, 100%);
+          overflow: hidden;
+        }
+      `
+      document.head.appendChild(style)
+      
+      // Set window height variable
+      document.documentElement.style.setProperty('--window-height', `${window.innerHeight}px`)
+      
+      // Detect keyboard open/close on mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      if (isMobile) {
+        const originalHeight = window.innerHeight
+        window.addEventListener('resize', () => {
+          // If height is significantly less, keyboard is likely open
+          if (window.innerHeight < originalHeight * 0.8) {
+            document.body.classList.add('keyboard-open')
+          } else {
+            document.body.classList.remove('keyboard-open')
+          }
+        })
+      }
+      
+      return () => {
+        if (style.parentNode) {
+          style.parentNode.removeChild(style)
+        }
+        document.body.classList.remove('keyboard-open')
+      }
+    }
+  }, [])
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentWord.trim() || isProcessing || disabled) return
+    
+    // Save current scroll position before any changes
+    const currentScrollY = window.scrollY
+    setScrollPosition(currentScrollY)
+    
+    // Add keyboard-open class to body to prevent scroll issues
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('keyboard-open')
+    }
+    
+    // Get the input element's position for later scroll restoration
+    const inputRect = inputRef.current?.getBoundingClientRect()
+    const inputPosition = inputRect ? inputRect.top + currentScrollY : null
     
     // Use the dummy input to maintain keyboard focus during submission
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -172,6 +256,14 @@ export default function WordInput({
       if ('virtualKeyboard' in navigator && navigator.virtualKeyboard) {
         navigator.virtualKeyboard.overlaysContent = true
         setTimeout(() => {
+          // Restore scroll position to keep input in view
+          if (inputPosition !== null) {
+            window.scrollTo({
+              top: inputPosition - 150, // Scroll to position the input in a good viewing area
+              behavior: 'auto'
+            })
+          }
+          
           if (inputRef.current) {
             // Return focus to the real input
             inputRef.current.focus()
@@ -181,6 +273,14 @@ export default function WordInput({
       } else {
         // Use multiple techniques to try to keep keyboard open
         setTimeout(() => {
+          // Restore scroll position to keep input in view
+          if (inputPosition !== null) {
+            window.scrollTo({
+              top: inputPosition - 150, // Scroll to position the input in a good viewing area
+              behavior: 'auto'
+            })
+          }
+          
           if (inputRef.current) {
             // Try to trigger a user activation event
             inputRef.current.click()
@@ -192,6 +292,14 @@ export default function WordInput({
               setTimeout(() => {
                 if (inputRef.current) {
                   inputRef.current.focus()
+                  
+                  // Final scroll position check
+                  if (inputPosition !== null) {
+                    window.scrollTo({
+                      top: inputPosition - 150,
+                      behavior: 'auto'
+                    })
+                  }
                 }
               }, 10)
             }
@@ -204,29 +312,37 @@ export default function WordInput({
   // Helper function is no longer used - removed to fix ESLint error
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          type="text"
-          value={currentWord}
-          onChange={(e) => {
-            setCurrentWord(e.target.value.toLowerCase())
-          }}
-          onBlur={preventBlur}
-          onClick={() => inputRef.current?.focus()}
-          placeholder={disabled ? "🎉 Game completed!" : "Enter your next word"}
-          className={`w-full p-3 text-base ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-          disabled={isProcessing || disabled}
-          autoComplete="off"
-          spellCheck="false"
-          autoCapitalize="none"
-          autoCorrect="off"
-          data-lpignore="true"
-          enterKeyHint="go"
-          inputMode="text"
+    <form onSubmit={handleSubmit} className="space-y-4 fixed-input-container">
+      <div className="relative fixed-input-container">
+        <div className="fixed-input-container">
+          <Input
+            ref={inputRef}
+            type="text"
+            value={currentWord}
+            onChange={(e) => {
+              setCurrentWord(e.target.value.toLowerCase())
+            }}
+            onBlur={preventBlur}
+            onClick={() => {
+              // Prevent scroll jumps when clicking
+              const currentScrollY = window.scrollY
+              inputRef.current?.focus()
+              // Restore scroll position
+              setTimeout(() => window.scrollTo(0, currentScrollY), 0)
+            }}
+            placeholder={disabled ? "🎉 Game completed!" : "Enter your next word"}
+            className={`w-full p-3 text-base fixed-input ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+            disabled={isProcessing || disabled}
+            autoComplete="off"
+            spellCheck="false"
+            autoCapitalize="none"
+            autoCorrect="off"
+            data-lpignore="true"
+            enterKeyHint="go"
+            inputMode="text"
           autoFocus
         />
+        </div>
       </div>
 
       <AnimatePresence>
