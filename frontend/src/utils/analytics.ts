@@ -91,8 +91,9 @@ export const trackUIEvents = {
   viewRules: () => 
     trackEvent(ANALYTICS_EVENTS.RULES_VIEWED),
     
-  shareGame: (platform?: string) => 
+  shareGame: (platform?: string, additionalProps?: Record<string, unknown>) => 
     trackEvent(ANALYTICS_EVENTS.GAME_SHARED, { 
-      [ANALYTICS_PROPERTIES.PLATFORM]: platform || null 
+      [ANALYTICS_PROPERTIES.PLATFORM]: platform || null,
+      ...additionalProps
     }),
 };

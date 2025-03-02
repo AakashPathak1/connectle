@@ -51,8 +51,8 @@ export function useAnalytics() {
       trackUIEvents.viewRules();
     }, []),
     
-    shareGame: useCallback((platform?: string) => {
-      trackUIEvents.shareGame(platform);
+    shareGame: useCallback((platform?: string, additionalProps?: Record<string, unknown>) => {
+      trackUIEvents.shareGame(platform, additionalProps);
     }, []),
   };
 

@@ -21,9 +21,8 @@ export default function StatsModal({
   onClose, 
   wordChain, 
   hintsUsed,
-  // Removing unused variables
-  // startWord,
-  // endWord,
+  startWord,
+  endWord,
   showConfetti = true,
   lockGame
 }: StatsModalProps) {
@@ -104,12 +103,13 @@ export default function StatsModal({
     const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
     
     const statsText = `Connectle (${formattedDate})
+🔗 ${startWord} → ${endWord}
 🔄 Chain: ${chainLength} words
 💡 Hints: ${hintsUsed}
 Play at connectle-game.vercel.app`;
 
     // Track share event
-    trackUIEvents.shareGame('clipboard');
+    trackUIEvents.shareGame('clipboard', { startWord, endWord });
 
     navigator.clipboard.writeText(statsText)
       .then(() => {
