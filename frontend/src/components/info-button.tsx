@@ -46,13 +46,18 @@ export default function InfoButton() {
 
   return (
     <div className="relative">
-      <button
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors shadow-md"
+        className="px-5 py-2.5 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors shadow-md"
         aria-label="Game information"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
       >
-        <span className="font-bold text-sm">i</span>
-      </button>
+        <span className="font-medium text-base">How to Play 🎮</span>
+      </motion.button>
 
       <AnimatePresence>
         {isOpen && (
@@ -79,7 +84,7 @@ export default function InfoButton() {
                 style={{ margin: '0 auto' }}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-xl text-gray-900 dark:text-white">How to Play 🎮</h3>
+                <h3 className="font-bold text-xl text-indigo-700 dark:text-indigo-400">How to Play 🎮</h3>
                 <button 
                   onClick={() => setIsOpen(false)}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1"

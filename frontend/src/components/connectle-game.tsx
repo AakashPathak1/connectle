@@ -367,7 +367,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
       
       
       <motion.div className="w-full max-w-4xl mx-auto space-y-8 relative">
-        <div className="absolute -top-2 left-0 z-10">
+        <div className="flex justify-center w-full mb-4">
           <InfoButton />
         </div>
         <div className="grid md:grid-cols-2 gap-6">
