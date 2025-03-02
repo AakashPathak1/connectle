@@ -105,12 +105,12 @@ def set_random_daily_puzzle():
         logger.error(traceback.format_exc())
         return False
 
-def set_random_daily():
+def set_random_puzzle():
     """
-    Set a random puzzle as daily.
-    This function is called by the daily scheduler.
+    Set a random puzzle as the current active puzzle.
+    This function is called by the scheduler every 2 minutes.
     """
-    logger.info("Daily task: Setting random daily puzzle")
+    logger.info("Scheduled task: Setting random puzzle")
     try:
         # Set a random puzzle as daily
         success = set_random_daily_puzzle()
@@ -125,46 +125,60 @@ def set_random_daily():
         logger.error(f"Error in daily task: {e}")
         return {"status": "error", "message": str(e)}
 
-# Daily scheduler function
-def start_daily_scheduler():
+# Scheduler function to change word every 2 minutes
+def start_scheduler():
     """
-    Start a background thread that runs set_random_daily at midnight every day.
+    Start a background thread that runs set_random_puzzle every 2 minutes at every even minute.
     """
     def run_scheduler():
-        logger.info("Starting daily scheduler thread")
+        logger.info("Starting scheduler thread for changing word every 2 minutes")
         
         while True:
             try:
                 # Get current time
                 now = datetime.now()
                 
-                # Calculate time until next midnight
-                tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                if tomorrow <= now:
-                    # If it's already past midnight, set for next day
-                    tomorrow = tomorrow.replace(day=tomorrow.day + 1)
+                # Calculate time until next even minute (0, 2, 4, ..., 58)
+                current_minute = now.minute
+                # Calculate the next even minute
+                next_even_minute = current_minute + (2 - current_minute % 2)
+                if next_even_minute == current_minute and now.second > 0:
+                    next_even_minute += 2
+                if next_even_minute >= 60:
+                    next_even_minute = 0
+                    next_hour = now.hour + 1
+                    if next_hour >= 24:
+                        next_hour = 0
+                else:
+                    next_hour = now.hour
                 
-                # Calculate seconds until midnight
-                seconds_until_midnight = (tomorrow - now).total_seconds()
+                next_time = now.replace(hour=next_hour, minute=next_even_minute, second=0, microsecond=0)
                 
-                logger.info(f"Scheduled next puzzle update in {seconds_until_midnight:.1f} seconds (at midnight)")
+                # Calculate seconds until next even minute
+                seconds_until_next = (next_time - now).total_seconds()
+                if seconds_until_next <= 0:
+                    seconds_until_next += 120  # Add 2 minutes if we calculated a negative time
                 
-                # Sleep until midnight
-                time.sleep(seconds_until_midnight)
+                logger.info(f"Scheduled next puzzle update in {seconds_until_next:.1f} seconds (at {next_time.strftime('%H:%M:%S')})")
                 
-                # It's midnight, set a new random puzzle
-                logger.info("It's midnight! Setting new random daily puzzle")
-                set_random_daily()
+                # Sleep until next even minute
+                time.sleep(seconds_until_next)
                 
-                # Sleep for a minute to avoid running multiple times
-                time.sleep(60)
+                # It's time to change the puzzle
+                logger.info(f"It's {datetime.now().strftime('%H:%M:%S')}! Setting new random puzzle")
+                set_random_puzzle()
+                
+                # Sleep for a second to avoid running multiple times
+                time.sleep(1)
                 
             except Exception as e:
-                logger.error(f"Error in daily scheduler: {e}")
-                # Sleep for a minute before retrying
-                time.sleep(60)
+                logger.error(f"Error in scheduler: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                # Sleep for 10 seconds before retrying
+                time.sleep(10)
     
     # Start the scheduler in a background thread
     thread = threading.Thread(target=run_scheduler, daemon=True)
     thread.start()
-    logger.info("Daily scheduler thread started")
+    logger.info("Scheduler thread started")

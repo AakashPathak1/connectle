@@ -22,14 +22,14 @@ app = create_app()
 def health_check():
     return {'status': 'healthy'}
 
-# Add a manual trigger endpoint for setting a random daily puzzle
-@app.route('/api/admin/set-random-daily', methods=['POST', 'GET'])
-def admin_set_random_daily():
+# Add a manual trigger endpoint for setting a random puzzle
+@app.route('/api/admin/set-random-puzzle', methods=['POST', 'GET'])
+def admin_set_random_puzzle():
     # Import here to avoid circular imports
-    from app.cron import set_random_daily
+    from app.cron import set_random_puzzle
     
-    logger.info("Manual trigger: set_random_daily()")
-    result = set_random_daily()
+    logger.info("Manual trigger: set_random_puzzle()")
+    result = set_random_puzzle()
     logger.info(f"Manual trigger result: {result}")
     return result
 
@@ -37,15 +37,15 @@ def admin_set_random_daily():
 if os.environ.get('VERCEL_ENV') == 'production':
     app.debug = False
     logger.info("Running in Vercel production environment")
-    # Start the daily scheduler even in production
-    from app.cron import start_daily_scheduler
-    start_daily_scheduler()
+    # Start the scheduler even in production
+    from app.cron import start_scheduler
+    start_scheduler()
 else:
     app.debug = True
     logger.info("Running in development environment")
-    # Start the daily scheduler in development environment
-    from app.cron import start_daily_scheduler
-    start_daily_scheduler()
+    # Start the scheduler in development environment
+    from app.cron import start_scheduler
+    start_scheduler()
 
 if __name__ == "__main__":
     # Use port 5001 to avoid conflicts with the Next.js dev server on 3000
