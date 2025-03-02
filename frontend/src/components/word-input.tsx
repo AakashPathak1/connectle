@@ -89,7 +89,6 @@ export default function WordInput({
           spellCheck="false"
           autoCapitalize="none"
           autoCorrect="off"
-          // These attributes help keep the keyboard open on mobile
           data-lpignore="true"
           enterKeyHint="go"
         />

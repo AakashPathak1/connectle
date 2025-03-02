@@ -20,8 +20,9 @@ export default function StatsModal({
   onClose, 
   wordChain, 
   hintsUsed,
-  startWord,
-  endWord,
+  // Removing unused variables
+  // startWord,
+  // endWord,
   showConfetti = true,
   lockGame
 }: StatsModalProps) {
@@ -91,7 +92,7 @@ export default function StatsModal({
         mainContent.style.visibility = 'visible'
       }
     }
-  }, [isOpen])
+  }, [isOpen, wordChain, hintsUsed])
 
   // Function to copy stats to clipboard
   const copyToClipboard = () => {
