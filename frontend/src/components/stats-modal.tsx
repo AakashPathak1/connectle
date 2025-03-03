@@ -28,8 +28,8 @@ export default function StatsModal({
 }: StatsModalProps) {
   // State to track if copy notification is visible
   const [copyNotificationVisible, setCopyNotificationVisible] = useState(false)
-  // Calculate chain length (connections between words)
-  const chainLength = wordChain.length - 1 // Subtract 1 because we count connections, not words
+  // Calculate chain length (total number of words in the chain)
+  const chainLength = wordChain.length // Count all words in the chain
 
   // Disable background scrolling and interactions when modal is open
   useEffect(() => {
@@ -96,8 +96,8 @@ export default function StatsModal({
     }
   }, [isOpen, wordChain, hintsUsed])
 
-  // Function to copy stats to clipboard
-  const copyToClipboard = () => {
+  // Function to copy stats to clipboard without word chain
+  const copyToClipboardWithoutChain = () => {
     // Get today's date in the format MM/DD/YYYY
     const today = new Date();
     const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
@@ -109,7 +109,39 @@ export default function StatsModal({
 Play at connectle-game.vercel.app`;
 
     // Track share event
-    trackUIEvents.shareGame('clipboard', { startWord, endWord });
+    trackUIEvents.shareGame('clipboard', { startWord, endWord, includesChain: false });
+
+    navigator.clipboard.writeText(statsText)
+      .then(() => {
+        // Show the copy notification
+        setCopyNotificationVisible(true);
+        
+        // Hide it after 1 second
+        setTimeout(() => {
+          setCopyNotificationVisible(false);
+        }, 1000);
+      })
+      .catch(err => {
+        console.error('Failed to copy stats: ', err);
+      });
+  };
+
+  // Function to copy stats to clipboard with word chain
+  const copyToClipboardWithChain = () => {
+    // Get today's date in the format MM/DD/YYYY
+    const today = new Date();
+    const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+    
+    const wordChainText = wordChain.join(' → ');
+    const statsText = `Connectle (${formattedDate})
+🔗 ${startWord} → ${endWord}
+🔄 Chain: ${chainLength} words
+📋 Path: ${wordChainText}
+💡 Hints: ${hintsUsed}
+Play at connectle-game.vercel.app`;
+
+    // Track share event
+    trackUIEvents.shareGame('clipboard', { startWord, endWord, includesChain: true });
 
     navigator.clipboard.writeText(statsText)
       .then(() => {
@@ -154,23 +186,15 @@ Play at connectle-game.vercel.app`;
               className="w-[90%] max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-5 pointer-events-auto relative z-[100000]"
               style={{ margin: '0 auto' }}
             >
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-center items-center mb-4">
                 <h3 className="font-bold text-xl text-gray-900 dark:text-white">Game Complete! 🎉</h3>
-                <button 
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
 
               <div className="space-y-4 text-gray-700 dark:text-gray-300">
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
                     <p className="text-xl font-semibold">🔄 {chainLength}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Word Chain</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Words</p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-center">
                     <p className="text-xl font-semibold">💡 {hintsUsed}</p>
@@ -180,8 +204,8 @@ Play at connectle-game.vercel.app`;
                 
                 <div className="col-span-2">
                   <p className="font-semibold text-base mb-2">📋 Your Path:</p>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                    <p className="text-sm leading-relaxed">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg overflow-x-auto">
+                    <p className="text-sm leading-relaxed whitespace-nowrap">
                       {wordChain.map((word, index) => (
                         <span key={index}>
                           <span className="font-medium">{word}</span>
@@ -195,7 +219,7 @@ Play at connectle-game.vercel.app`;
                 </div>
               </div>
               
-              <div className="mt-5 grid grid-cols-2 gap-3 relative">
+              <div className="mt-5 space-y-3 relative">
                 {/* Copy notification with animation */}
                 <motion.div 
                   className="absolute -top-10 left-0 right-0 text-center text-green-500 font-medium bg-green-100 py-2 px-4 rounded-md mx-auto w-max"
@@ -208,15 +232,30 @@ Play at connectle-game.vercel.app`;
                 >
                   Copied to clipboard! ✓
                 </motion.div>
-                <button
-                  onClick={copyToClipboard}
-                  className="py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                  </svg>
-                  Share Your Stats
-                </button>
+                
+                {/* Copy buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={copyToClipboardWithoutChain}
+                    className="flex-[6] py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    Copy Stats
+                  </button>
+                  <button
+                    onClick={copyToClipboardWithChain}
+                    className="flex-[4] py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    Copy Chain
+                  </button>
+                </div>
+                
+                {/* Close button */}
                 <button
                   onClick={() => {
                     // Lock the game when closing the modal
@@ -226,7 +265,7 @@ Play at connectle-game.vercel.app`;
                     }
                     onClose();
                   }}
-                  className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                  className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
                 >
                   Close
                 </button>
