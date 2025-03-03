@@ -59,10 +59,10 @@ export default function SimilarityMeter({
           transition={{ duration: 0.3, ease: "easeOut" }}
         />
         
-        {/* Threshold marker */}
+        {/* Threshold marker - positioned at 50% */}
         <div 
           className="absolute -top-2 h-[calc(100%+12px)] w-[2px] bg-black dark:bg-black z-10"
-          style={{ left: `${threshold * 100}%` }}
+          style={{ left: `50%` }}
         />
       </div>
       
