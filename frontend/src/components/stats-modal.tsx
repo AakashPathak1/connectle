@@ -269,6 +269,17 @@ Play at connectle-game.vercel.app`;
                 >
                   Close
                 </button>
+                
+                {/* Feedback link */}
+                <div className="mt-4 text-center">
+                  <a 
+                    href="mailto:aakashpathak@berkeley.edu?subject=Connectle Feedback"
+                    onClick={() => trackUIEvents.clickFeedback()}
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200"
+                  >
+                    Feedback?
+                  </a>
+                </div>
               </div>
             </motion.div>
           </div>
