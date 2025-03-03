@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AnalyticsProvider } from "@/providers/analytics-provider";
 import PageViewTracker from "@/components/page-view-tracker";
 import ErrorBoundary from "@/components/error-boundary";
+import FeedbackLink from "@/components/feedback-link";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -63,6 +64,7 @@ export default function RootLayout({
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
+          <FeedbackLink email="aakashpathak@berkeley.edu" />
         </AnalyticsProvider>
         <Analytics />
         <SpeedInsights />

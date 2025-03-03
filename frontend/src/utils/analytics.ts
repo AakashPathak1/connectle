@@ -96,4 +96,7 @@ export const trackUIEvents = {
       [ANALYTICS_PROPERTIES.PLATFORM]: platform || null,
       ...additionalProps
     }),
+
+  clickFeedback: () => 
+    trackEvent(ANALYTICS_EVENTS.FEEDBACK_CLICKED),
 };

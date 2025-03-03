@@ -27,6 +27,7 @@ export const ANALYTICS_EVENTS = {
   THEME_TOGGLED: 'theme_toggled',
   RULES_VIEWED: 'rules_viewed',
   GAME_SHARED: 'game_shared',
+  FEEDBACK_CLICKED: 'feedback_clicked',
   
   // Page events
   PAGE_VIEW: 'page_view',
