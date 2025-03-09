@@ -81,6 +81,7 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
       if (data.already_in_chain) {
         const duplicateWord = data.duplicate_word || 'a word'
         setWordError(`"${word}" is the same as "${duplicateWord}" which is already in your chain. Try a different word.`)
+        setInvalidWord(false) // Important: Don't mark as invalid word, we have a specific error
         return false
       }
       
@@ -195,7 +196,13 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         setIsCheckingWord(false)
         setIsProcessing(false)
         setCurrentWord(normalizedWord)
-        setInvalidWord(true)
+        
+        // Only set invalidWord flag if we don't already have a specific error message
+        // This will allow our custom duplicate word error to display instead
+        if (!wordError) {
+          setInvalidWord(true)
+        }
+        
         setLastSimilarity(null)
         return
       }
