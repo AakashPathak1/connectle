@@ -5,6 +5,7 @@ import os
 import logging
 from ..models.supabase_config import get_puzzles
 from ..config import Config
+from .word_service import singularize_word
 
 logger = logging.getLogger(__name__)
 
@@ -93,11 +94,21 @@ class GameService:
             return jsonify({"error": "Missing words"}), 400
             
         try:
+            # Singularize words before checking similarity
+            singular_word1 = singularize_word(word1)
+            singular_word2 = singularize_word(word2)
+            
+            # Log the singularization if it happened
+            if singular_word1 != word1:
+                logger.info(f"Singularized word1 from '{word1}' to '{singular_word1}'")
+            if singular_word2 != word2:
+                logger.info(f"Singularized word2 from '{word2}' to '{singular_word2}'")
+            
             # Get the Hugging Face space URL from config
             hf_space_url = Config.HF_SPACE_URL
             response = requests.get(
                 f"{hf_space_url}/check-similarity",
-                params={"word1": word1, "word2": word2}
+                params={"word1": singular_word1, "word2": singular_word2}
             )
             
             if response.status_code == 200:
@@ -141,13 +152,23 @@ class GameService:
             return jsonify({"error": "Missing current_word or target_word"}), 400
             
         try:
+            # Singularize words before getting hint
+            singular_current_word = singularize_word(current_word)
+            singular_target_word = singularize_word(target_word)
+            
+            # Log the singularization if it happened
+            if singular_current_word != current_word:
+                logger.info(f"Singularized current_word from '{current_word}' to '{singular_current_word}'")
+            if singular_target_word != target_word:
+                logger.info(f"Singularized target_word from '{target_word}' to '{singular_target_word}'")
+            
             # Get the Hugging Face space URL from config
             hf_space_url = Config.HF_SPACE_URL
             response = requests.get(
                 f"{hf_space_url}/hint",
                 params={
-                    "current_word": current_word, 
-                    "target_word": target_word,
+                    "current_word": singular_current_word, 
+                    "target_word": singular_target_word,
                     "threshold": 0.47  # Use the new threshold for finding hints
                 }
             )
@@ -172,11 +193,21 @@ class GameService:
             return jsonify({"error": "Missing word1 or word2"}), 400
             
         try:
+            # Singularize words before checking similarity
+            singular_word1 = singularize_word(word1)
+            singular_word2 = singularize_word(word2)
+            
+            # Log the singularization if it happened
+            if singular_word1 != word1:
+                logger.info(f"Singularized word1 from '{word1}' to '{singular_word1}'")
+            if singular_word2 != word2:
+                logger.info(f"Singularized word2 from '{word2}' to '{singular_word2}'")
+            
             # Get the Hugging Face space URL from config
             hf_space_url = Config.HF_SPACE_URL
             response = requests.get(
                 f"{hf_space_url}/check-similarity",
-                params={"word1": word1, "word2": word2}
+                params={"word1": singular_word1, "word2": singular_word2}
             )
             
             if response.status_code == 200:

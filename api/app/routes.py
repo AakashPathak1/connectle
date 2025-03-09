@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from .services.game_service import GameService
+from .services.word_service import singularize_word
 from . import limiter
 import logging
 
@@ -60,6 +61,14 @@ def check_word():
     if not word:
         logger.warning("Missing word parameter")
         return jsonify({"error": "Missing word parameter"}), 400
+        
+    # Singularize the word if it's plural
+    original_word = word
+    word = singularize_word(word)
+    
+    # Log if singularization happened
+    if word != original_word:
+        logger.info(f"Singularized word from '{original_word}' to '{word}'")
     
     # Use the game service to check if the word is valid
     try:
@@ -75,19 +84,34 @@ def check_word():
             params={"word": word}
         )
         
+        # Store the original word for the response
+        
         if response.status_code == 200:
             result = response.json()
             is_valid = result.get("is_valid", False)
             logger.info(f"Word '{word}' validity: {is_valid}")
-            return jsonify({"is_valid": is_valid})
+            # Include both original and singularized word in the response
+            return jsonify({
+                "is_valid": is_valid,
+                "original_word": original_word,
+                "singularized_word": word if word != original_word else None
+            })
         else:
             logger.error(f"Error from HF Space: {response.text}")
             # Fallback validation if the API fails
             logger.warning(f"Using fallback validation for '{word}'")
-            return jsonify({"is_valid": True})  # Assume valid as a fallback
+            return jsonify({
+                "is_valid": True,  # Assume valid as a fallback
+                "original_word": original_word,
+                "singularized_word": word if word != original_word else None
+            })
             
     except Exception as e:
         logger.error(f"Error checking word validity: {str(e)}")
         # In case of error, assume the word is valid to not block the user
         logger.warning(f"Exception occurred, assuming '{word}' is valid")
-        return jsonify({"is_valid": True})
+        return jsonify({
+            "is_valid": True,
+            "original_word": original_word,
+            "singularized_word": word if word != original_word else None
+        })
