@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
 from .services.game_service import GameService
-from .services.word_service import singularize_word
+from .services.word_service import singularize_word, are_singular_forms_same
 from . import limiter
 import logging
+import json
 
 main = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
@@ -61,7 +62,18 @@ def check_word():
     if not word:
         logger.warning("Missing word parameter")
         return jsonify({"error": "Missing word parameter"}), 400
-        
+    
+    # Get the word chain if provided
+    word_chain_param = request.args.get('word_chain')
+    word_chain = []
+    if word_chain_param:
+        try:
+            word_chain = json.loads(word_chain_param)
+            logger.info(f"Received word chain: {word_chain}")
+        except Exception as e:
+            logger.warning(f"Error parsing word chain: {str(e)}")
+            # Continue without word chain if parsing fails
+    
     # Singularize the word if it's plural
     original_word = word
     word = singularize_word(word)
@@ -69,6 +81,18 @@ def check_word():
     # Log if singularization happened
     if word != original_word:
         logger.info(f"Singularized word from '{original_word}' to '{word}'")
+    
+    # Check if the singularized form of the word is already in the chain
+    already_in_chain = False
+    duplicate_word = None
+    
+    if word_chain:
+        for chain_word in word_chain:
+            if are_singular_forms_same(word, chain_word):
+                already_in_chain = True
+                duplicate_word = chain_word
+                logger.info(f"Word '{word}' (from '{original_word}') has the same singular form as '{chain_word}' in the chain")
+                break
     
     # Use the game service to check if the word is valid
     try:
@@ -90,11 +114,13 @@ def check_word():
             result = response.json()
             is_valid = result.get("is_valid", False)
             logger.info(f"Word '{word}' validity: {is_valid}")
-            # Include both original and singularized word in the response
+            # Include both original and singularized word in the response, plus duplicate check
             return jsonify({
                 "is_valid": is_valid,
                 "original_word": original_word,
-                "singularized_word": word if word != original_word else None
+                "singularized_word": word if word != original_word else None,
+                "already_in_chain": already_in_chain,
+                "duplicate_word": duplicate_word
             })
         else:
             logger.error(f"Error from HF Space: {response.text}")
@@ -103,7 +129,9 @@ def check_word():
             return jsonify({
                 "is_valid": True,  # Assume valid as a fallback
                 "original_word": original_word,
-                "singularized_word": word if word != original_word else None
+                "singularized_word": word if word != original_word else None,
+                "already_in_chain": already_in_chain,
+                "duplicate_word": duplicate_word
             })
             
     except Exception as e:
@@ -113,5 +141,7 @@ def check_word():
         return jsonify({
             "is_valid": True,
             "original_word": original_word,
-            "singularized_word": word if word != original_word else None
+            "singularized_word": word if word != original_word else None,
+            "already_in_chain": already_in_chain,
+            "duplicate_word": duplicate_word
         })

@@ -68,12 +68,22 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
   const [wordAccepted, setWordAccepted] = useState(false)
   const [gameError, setGameError] = useState<string | null>(null)
 
-  // Check if a word is valid English
+  // Check if a word is valid English and not a duplicate (in singular form)
   const checkIsValidWord = async (word: string) => {
     try {
-      const response = await fetch(`${apiBaseUrl}/api/check-word?word=${encodeURIComponent(word)}`)
+      // Send the current word chain to check for duplicates in singular form
+      const wordChainParam = encodeURIComponent(JSON.stringify(wordChain))
+      const response = await fetch(`${apiBaseUrl}/api/check-word?word=${encodeURIComponent(word)}&word_chain=${wordChainParam}`)
       const data = await response.json()
       console.log("Word validation response:", data)
+      
+      // Check if the word is already in the chain (in singular form)
+      if (data.already_in_chain) {
+        const duplicateWord = data.duplicate_word || 'a word'
+        setWordError(`"${word}" is the same as "${duplicateWord}" which is already in your chain. Try a different word.`)
+        return false
+      }
+      
       return data.is_valid
     } catch (error) {
       console.error("Error checking word validity:", error)
