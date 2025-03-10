@@ -82,14 +82,14 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
         const duplicateWord = data.duplicate_word || 'a word'
         setWordError(`"${word}" is the same as "${duplicateWord}" which is already in your chain. Try a different word.`)
         setInvalidWord(false) // Important: Don't mark as invalid word, we have a specific error
-        return false
+        return { isValid: false, isDuplicate: true }
       }
       
-      return data.is_valid
+      return { isValid: data.is_valid, isDuplicate: false }
     } catch (error) {
       console.error("Error checking word validity:", error)
       setGameError("Failed to check word validity. Please try again.")
-      return false
+      return { isValid: false, isDuplicate: false }
     }
   }
 
@@ -189,19 +189,21 @@ export default function ConnectleGame({ apiBaseUrl, puzzle }: ConnectleGameProps
     }
     
     try {
-      // First check if it's a valid English word
-      const isValid = await checkIsValidWord(normalizedWord)
+      // First check if it's a valid English word and not a duplicate
+      const { isValid, isDuplicate } = await checkIsValidWord(normalizedWord)
       
       if (!isValid) {
         setIsCheckingWord(false)
         setIsProcessing(false)
         setCurrentWord(normalizedWord)
         
-        // Only set invalidWord flag if we don't already have a specific error message
-        // This will allow our custom duplicate word error to display instead
-        if (!wordError) {
+        // Only set invalidWord flag if it's not a duplicate (which already has a specific error)
+        if (!isDuplicate) {
           setInvalidWord(true)
+          // Clear any previous error message so the "Not a valid English word" shows up
+          setWordError(null);
         }
+        // If it is a duplicate, the error message was already set in checkIsValidWord
         
         setLastSimilarity(null)
         return
