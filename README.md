@@ -2,7 +2,7 @@
 
 ## 📖 Overview
 
-Connectle is an engaging word chain game that challenges players to find a path between two seemingly unrelated words by making single-word steps. The unique twist: each consecutive pair of words must have at least 60% semantic similarity, as determined by advanced NLP algorithms. This creates a puzzle that tests both vocabulary and creative thinking.
+Connectle is an engaging word chain game that challenges players to find a path between two seemingly unrelated words by making single-word steps. The unique twist: each consecutive pair of words must have at least 50% semantic similarity, as determined by advanced NLP algorithms. This creates a puzzle that tests both vocabulary and creative thinking.
 
 Unlike traditional word association games that rely on direct relationships, Connectle leverages semantic similarity to create more nuanced connections between words, making for a deeper and more intellectually stimulating experience.
 
@@ -10,7 +10,7 @@ Unlike traditional word association games that rely on direct relationships, Con
 
 ### Core Gameplay
 - **Daily Word Pairs**: A new start and end word pair each day with definitions
-- **Semantic Validation**: Words must have at least 60% semantic similarity to be accepted
+- **Semantic Validation**: Words must have at least 50% semantic similarity to be accepted
 - **Unlimited Attempts**: Players can try as many times as needed to solve the puzzle
 - **Word Validation**: Real-time checking against an English dictionary
 - **Chain Visualization**: Visual representation of the word chain as it's built
@@ -48,9 +48,13 @@ Unlike traditional word association games that rely on direct relationships, Con
 
 Starting word: **ocean** → **water** → **drink** → **food** → **meal** → Target word: **dinner**
 
-Each consecutive pair of words has at least 60% semantic similarity, creating a valid path from "ocean" to "dinner".
+Each consecutive pair of words has at least 50% semantic similarity, creating a valid path from "ocean" to "dinner".
 
 ## 🏗️ Architecture
+- I wanted to play around with GPT 4o's image capabilities, so here's a system architecture diagram it generated
+
+<img src="https://github.com/user-attachments/assets/a7a53120-b051-4abe-93e4-deebda16aba0" alt="architecture diagram" width="300"/>
+
 
 Connectle is built with a modern, scalable architecture consisting of five main components:
 
