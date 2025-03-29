@@ -1,20 +1,5 @@
 # Connectle: Semantic Word Chain Game
 
-<p align="center">
-  <img src="frontend/public/logo.png" alt="Connectle Logo" width="200"/>
-</p>
-
-<p align="center">
-  <a href="https://connectle.vercel.app">Live Demo</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#how-to-play">How to Play</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#technologies">Technologies</a> •
-  <a href="#development">Development</a> •
-  <a href="#deployment">Deployment</a> •
-  <a href="#contributing">Contributing</a>
-</p>
-
 ## 📖 Overview
 
 Connectle is an engaging word chain game that challenges players to find a path between two seemingly unrelated words by making single-word steps. The unique twist: each consecutive pair of words must have at least 60% semantic similarity, as determined by advanced NLP algorithms. This creates a puzzle that tests both vocabulary and creative thinking.
