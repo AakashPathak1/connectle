@@ -51,7 +51,7 @@ Starting word: **ocean** → **water** → **drink** → **food** → **meal** �
 Each consecutive pair of words has at least 50% semantic similarity, creating a valid path from "ocean" to "dinner".
 
 ## 🏗️ Architecture
-- I wanted to play around with GPT 4o's image capabilities, so here's a system architecture diagram it generated
+I wanted to play around with GPT 4o's image capabilities, so here's a system architecture diagram it generated
 
 <img src="https://github.com/user-attachments/assets/a7a53120-b051-4abe-93e4-deebda16aba0" alt="architecture diagram" width="300"/>
 
