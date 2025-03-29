@@ -260,13 +260,13 @@ Analytics can be enabled/disabled via the `NEXT_PUBLIC_ANALYTICS_ENABLED` enviro
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License
 
 ## 🙏 Acknowledgements
 
-- [HuggingFace](https://huggingface.co/) for NLP models
+- [HuggingFace](https://huggingface.co/) for hosting my own NLP models
 - [Vercel](https://vercel.com/) for hosting
-- [Supabase](https://supabase.io/) for database services
+- [Supabase](https://supabase.com/) for database services
 - [WordNet](https://wordnet.princeton.edu/) for lexical database
 - All contributors and players who make Connectle better every day
 
