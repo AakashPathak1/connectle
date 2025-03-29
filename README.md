@@ -185,6 +185,7 @@ uvicorn app:app --reload --port 8000
 
 ## 🚀 Development
 Project Structure
+```bash
 connectle/
 ├── api/                    # Backend API
 │   ├── app/                # Flask application
@@ -192,20 +193,54 @@ connectle/
 │   │   ├── config.py       # Configuration
 │   │   ├── routes.py       # API endpoints
 │   │   └── services/       # Business logic
+│   │       └── game_service.py  # Game logic implementation
 │   ├── scripts/            # Utility scripts
-│   └── tests/              # Backend tests
+│   │   └── generate_puzzles.py  # Puzzle generation
+│   ├── tests/              # Backend tests
+│   └── requirements.txt    # Python dependencies
 ├── frontend/               # React frontend
 │   ├── public/             # Static assets
-│   └── src/                # Source code
-│       ├── components/     # React components
-│       ├── hooks/          # Custom React hooks
-│       ├── utils/          # Utility functions
-│       ├── styles/         # CSS styles
-│       └── pages/          # Next.js pages
+│   │   ├── favicon.ico     # Site favicon
+│   │   └── logo.png        # Connectle logo
+│   ├── src/                # Source code
+│   │   ├── components/     # React components
+│   │   │   ├── connectle-game.tsx  # Main game component
+│   │   │   ├── word-card.tsx       # Word display component
+│   │   │   ├── word-chain.tsx      # Chain visualization
+│   │   │   ├── word-input.tsx      # User input component
+│   │   │   ├── hint-display.tsx    # Hint component
+│   │   │   ├── stats-modal.tsx     # Statistics display
+│   │   │   ├── info-button.tsx     # Help/info button
+│   │   │   ├── feedback-link.tsx   # User feedback component
+│   │   │   └── error-boundary.tsx  # Error handling
+│   │   ├── hooks/          # Custom React hooks
+│   │   │   ├── useAnalytics.ts     # Analytics hook
+│   │   │   └── useLocalStorage.ts  # Storage hook
+│   │   ├── utils/          # Utility functions
+│   │   │   └── analytics.ts        # Analytics implementation
+│   │   ├── providers/      # Context providers
+│   │   │   └── analytics-provider.tsx  # Analytics context
+│   │   ├── config/         # Configuration
+│   │   │   └── analytics.ts        # Analytics config
+│   │   ├── styles/         # CSS styles
+│   │   │   └── globals.css         # Global styles
+│   │   └── pages/          # Next.js pages
+│   │       ├── index.tsx           # Homepage
+│   │       ├── _app.tsx            # App wrapper
+│   │       └── api/                # API routes
+│   ├── package.json        # NPM dependencies
+│   └── tsconfig.json       # TypeScript config
 ├── connectle-huggingface/  # HuggingFace integration
 │   ├── app.py              # FastAPI application
 │   └── requirements.txt    # Python dependencies
+├── supabase/               # Database migrations
+│   └── migrations/         # SQL migrations
+├── .github/                # GitHub configuration
+│   └── workflows/          # CI/CD workflows
+├── ANALYTICS.md            # Analytics documentation
+├── LICENSE                 # MIT License
 └── README.md               # Project documentation
+```
 
 ## 📊 Analytics
 
