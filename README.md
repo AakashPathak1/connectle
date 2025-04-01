@@ -55,6 +55,11 @@ I wanted to play around with GPT 4o's image capabilities, so here's a system arc
 
 <img src="https://github.com/user-attachments/assets/a7a53120-b051-4abe-93e4-deebda16aba0" alt="architecture diagram" width="300"/>
 
+Here's another system architecture diagram made by gitdiagram.com
+
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/ce11e504-21bc-412a-82c6-d8b9c7c3032b"/>
+
+
 
 Connectle is built with a modern, scalable architecture consisting of five main components:
 
