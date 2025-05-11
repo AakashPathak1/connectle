@@ -268,6 +268,8 @@ def store_puzzle(start_word, end_word, start_def, end_def, is_daily=False):
             'end_word': end_word,
             'start_definition': start_def,
             'end_definition': end_def,
+            'transition_graph': '{}',  # Add empty JSON object for non-null constraint
+            'date': datetime.now().date().isoformat(),  # Add current date for non-null constraint
             'created_at': datetime.now().isoformat(),  # Current timestamp
             'is_daily': is_daily,  # Set the is_daily flag
         }

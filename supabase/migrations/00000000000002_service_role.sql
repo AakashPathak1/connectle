@@ -9,7 +9,7 @@ create policy "Anyone can read puzzles"
 
 create policy "Service can insert puzzles"
     on puzzles for insert
-    using (true);  -- Allow inserts from service role
+    with check (true);  -- Allow inserts from service role
 
 -- Update the puzzles table to allow inserts without authentication
 alter table puzzles disable row level security;

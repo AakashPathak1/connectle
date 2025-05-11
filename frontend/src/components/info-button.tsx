@@ -115,6 +115,33 @@ export default function InfoButton() {
                       <span className="mr-2">•</span>
                       <span>Watch the similarity meter 📊 to guide your choices</span>
                     </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <div className="flex flex-col space-y-1">
+                        <span>Example: registry → mileage</span>
+                        <span className="text-lg text-green-700 dark:text-green-400">
+                          registry
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          register
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          enroll
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          college
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          science
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          chemistry
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          gas
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          car
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          speed
+                          <span className="text-gray-500 dark:text-gray-400"> → </span>
+                          mileage
+                        </span>
+                      </div>
+                    </li>
                   </ul>
                 </div>
               </div>
