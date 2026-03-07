@@ -13,10 +13,11 @@ interface Puzzle {
   endDefinition: string;
 }
 
-// API URL configuration
+// API URL configuration — all requests go directly to the HuggingFace space
+const HF_SPACE_URL = 'https://aakashpathak-connectle-huggingface.hf.space';
 const isProduction = process.env.NODE_ENV === 'production';
-const API_BASE_URL = isProduction 
-  ? '' // Empty string for relative URLs in production
+const API_BASE_URL = isProduction
+  ? HF_SPACE_URL
   : 'http://localhost:5001'; // Use localhost in development
 
 export default function Home() {
