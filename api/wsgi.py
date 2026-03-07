@@ -37,15 +37,15 @@ def admin_set_random_puzzle():
 if os.environ.get('VERCEL_ENV') == 'production':
     app.debug = False
     logger.info("Running in Vercel production environment")
-    # Start the scheduler even in production
-    from app.cron import start_scheduler
+    from app.cron import start_scheduler, keep_supabase_alive
     start_scheduler()
+    keep_supabase_alive()
 else:
     app.debug = True
     logger.info("Running in development environment")
-    # Start the scheduler in development environment
-    from app.cron import start_scheduler
+    from app.cron import start_scheduler, keep_supabase_alive
     start_scheduler()
+    keep_supabase_alive()
 
 if __name__ == "__main__":
     # Use port 5001 to avoid conflicts with the Next.js dev server on 3000
