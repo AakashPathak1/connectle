@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def set_random_daily_puzzle():
-    """
-    Tell the HuggingFace space to pick a new random daily puzzle.
-    """
+    """Tell the HuggingFace space to pick a new random daily puzzle."""
     try:
         hf_url = f"{Config.HF_SPACE_URL}/admin/set-random-puzzle"
         logger.info(f"Calling HuggingFace admin endpoint: {hf_url}")
@@ -59,9 +57,7 @@ def set_random_puzzle():
 
 
 def start_scheduler():
-    """
-    Start a background thread that calls set_random_puzzle once at midnight each day.
-    """
+    """Start a background thread that rotates the puzzle once at midnight each day."""
     def run_scheduler():
         logger.info("Scheduler thread started — will rotate puzzle at midnight each day")
         while True:
@@ -75,7 +71,7 @@ def start_scheduler():
                 logger.info(f"Next puzzle rotation in {seconds_until_midnight:.0f}s (at {tomorrow.strftime('%Y-%m-%d %H:%M:%S')})")
                 time.sleep(seconds_until_midnight)
 
-                logger.info(f"Midnight reached — rotating daily puzzle")
+                logger.info("Midnight reached — rotating daily puzzle")
                 set_random_puzzle()
 
                 time.sleep(60)  # avoid double-firing
@@ -87,26 +83,3 @@ def start_scheduler():
     thread = threading.Thread(target=run_scheduler, daemon=True)
     thread.start()
     logger.info("Scheduler thread started")
-
-
-def keep_supabase_alive():
-    """
-    Ping Supabase every 3 days with a lightweight query to prevent the free-tier
-    project from being paused due to inactivity (Supabase pauses after 7 days).
-    """
-    PING_INTERVAL_SECONDS = 3 * 24 * 60 * 60  # 3 days
-
-    def run_ping():
-        logger.info("Starting Supabase keep-alive thread (pings every 3 days)")
-        while True:
-            try:
-                supabase_client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
-                response = supabase_client.table("puzzles").select("id").limit(1).execute()
-                logger.info(f"Supabase keep-alive ping OK (got {len(response.data)} row(s))")
-            except Exception as e:
-                logger.error(f"Supabase keep-alive ping failed: {e}")
-            time.sleep(PING_INTERVAL_SECONDS)
-
-    thread = threading.Thread(target=run_ping, daemon=True)
-    thread.start()
-    logger.info("Supabase keep-alive thread started")
