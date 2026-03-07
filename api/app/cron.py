@@ -170,3 +170,26 @@ def start_scheduler():
     thread = threading.Thread(target=run_scheduler, daemon=True)
     thread.start()
     logger.info("Scheduler thread started")
+
+
+def keep_supabase_alive():
+    """
+    Ping Supabase every 3 days with a lightweight query to prevent the free-tier
+    project from being paused due to inactivity (Supabase pauses after 7 days).
+    """
+    PING_INTERVAL_SECONDS = 3 * 24 * 60 * 60  # 3 days
+
+    def run_ping():
+        logger.info("Starting Supabase keep-alive thread (pings every 3 days)")
+        while True:
+            try:
+                supabase_client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
+                response = supabase_client.table("puzzles").select("id").limit(1).execute()
+                logger.info(f"Supabase keep-alive ping OK (got {len(response.data)} row(s))")
+            except Exception as e:
+                logger.error(f"Supabase keep-alive ping failed: {e}")
+            time.sleep(PING_INTERVAL_SECONDS)
+
+    thread = threading.Thread(target=run_ping, daemon=True)
+    thread.start()
+    logger.info("Supabase keep-alive thread started")
