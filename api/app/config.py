@@ -18,18 +18,18 @@ else:
     logger.warning(f"No .env file found in root or api directory. Using default values.")
 
 class Config:
-    # Supabase configuration with defaults for development
     SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://your-project.supabase.co')
     SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'your-anon-key')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
     HF_SPACE_URL = os.getenv('HF_SPACE_URL', 'https://aakashpathak-connectle-huggingface.hf.space')
-    
+    ADMIN_SECRET = os.getenv('ADMIN_SECRET', '')
+
     @classmethod
     def is_development(cls):
         return cls.FLASK_ENV == 'development'
 
     @classmethod
     def has_valid_supabase_config(cls):
-        return ('your-project' not in cls.SUPABASE_URL and 
+        return ('your-project' not in cls.SUPABASE_URL and
                 'your-anon-key' not in cls.SUPABASE_KEY)
